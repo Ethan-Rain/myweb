@@ -4,11 +4,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.sql.Time;
-
 @RestController
 @RequestMapping("/api/time")
-public class time {
+public class Time {
     //以String返回当前日期时间，年月日时分秒
     @RequestMapping("/getTime")
     public String getTime() {
@@ -19,9 +17,9 @@ public class time {
     //以JSON形式返回当前时间
     @RequestMapping("/getTimeJson")
     public @ResponseBody
-    Time getTimeJson() {
+    java.sql.Time getTimeJson() {
         java.util.Date date = new java.util.Date();
-        return new Time(date.getTime());
+        return new java.sql.Time(date.getTime());
     }
 
 }

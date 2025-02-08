@@ -1,75 +1,155 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<!-- 项目对象模型(POM)配置文件 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
+    <!-- =============== 项目基本信息 =============== -->
+    <!-- 组织唯一标识符（公司/组织域名的反向） -->
     <groupId>cn.helloworld1999</groupId>
+    <!-- 项目唯一标识符（模块名称） -->
     <artifactId>myweb</artifactId>
+    <!-- 当前版本号（SNAPSHOT表示开发版） -->
     <version>0.0.1-SNAPSHOT</version>
+    <!-- 项目展示名称 -->
     <name>myweb</name>
+    <!-- 项目描述 -->
     <description>myweb</description>
+
+    <!-- =============== 全局属性配置 =============== -->
     <properties>
+        <!-- Java版本要求 -->
         <java.version>1.8</java.version>
+        <!-- 源码文件编码 -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 输出报告编码 -->
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <!-- Spring Boot版本 -->
         <spring-boot.version>2.6.13</spring-boot.version>
     </properties>
+
+    <!-- =============== 项目依赖配置 =============== -->
     <dependencies>
+        <!-- Spring Boot Web Starter（开发Web应用的核心依赖） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.mybatis.spring.boot</groupId>-->
-<!--            <artifactId>mybatis-spring-boot-starter</artifactId>-->
-<!--            <version>2.2.2</version>-->
-<!--        </dependency>-->
 
-<!--        <dependency>-->
-<!--            <groupId>com.mysql</groupId>-->
-<!--            <artifactId>mysql-connector-j</artifactId>-->
-<!--            <scope>runtime</scope>-->
-<!--        </dependency>-->
+        <!--<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>-->
+
+        <!-- ZXing二维码生成核心库 -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+
+        <!-- ZXing二维码图像处理库 -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>2.2.2</version> <!-- 根据Spring Boot版本选择合适的MyBatis版本 -->
+        </dependency>
+
+        <!-- MySQL JDBC驱动 -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.49</version> <!-- 修改为兼容MySQL 5.7的驱动版本 -->
+        </dependency>
+
+        <!-- Spring Boot JDBC Starter -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+
+        <!-- Spring Boot测试支持（仅在测试阶段有效） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- SLF4J 日志依赖 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.11</version>
+        </dependency>
     </dependencies>
+
+    <!-- =============== 依赖版本管理 =============== -->
     <dependencyManagement>
         <dependencies>
+            <!-- 导入Spring Boot的默认依赖版本管理 -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot.version}</version>
+                <!-- 声明为pom类型依赖，用于继承版本管理 -->
                 <type>pom</type>
+                <!-- import范围表示继承依赖管理配置 -->
                 <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
+    <!-- =============== 构建配置 =============== -->
     <build>
         <plugins>
+            <!-- Maven编译器插件 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
+                    <!-- 源代码兼容版本 -->
                     <source>1.8</source>
+                    <!-- 目标字节码版本 -->
                     <target>1.8</target>
+                    <!-- 编译使用的字符编码 -->
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
+
+            <!-- Spring Boot Maven打包插件 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
+                    <!-- 指定Spring Boot的主启动类 -->
                     <mainClass>cn.helloworld1999.myweb.MywebApplication</mainClass>
                 </configuration>
                 <executions>
+                    <!-- 绑定到package阶段执行 -->
                     <execution>
                         <id>repackage</id>
                         <goals>
+                            <!-- 生成可执行jar包 -->
                             <goal>repackage</goal>
                         </goals>
                     </execution>
@@ -77,5 +157,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
