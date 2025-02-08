@@ -1,9 +1,13 @@
 variables:
-  GITLAB_CLONE_URL: http://http://192.168.31.106:32769/testteam/myweb.git
+  GIT_STRATEGY: none  # 禁用默认的克隆策略
+
 stages:
   - test
 
 test_job:
   stage: test
+  before_script:
+    - git clone http://192.168.31.106:32769/testteam/myweb.git /root/builds/myweb
   script:
+    - cd /root/builds/myweb
     - echo "Running tests on remote server123..."
