@@ -19,7 +19,7 @@
         height
     </sql>
 
-    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    <select id="selectByPrimaryKey" parameterType="java.lang.String" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List" />
         from image
@@ -29,14 +29,11 @@
     <select id="countAllImages" resultType="int">
         SELECT COUNT(*) FROM image
     </select>
-    <select id="getAllImageIds">
-        select id from image
-    </select>
     <select id="selectRandomImage" resultType="cn.helloworld1999.myweb.demos.api.model.Image">
         SELECT * FROM image ORDER BY RAND() LIMIT 1
     </select>
 
-    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.String">
         delete from image
         where  id = #{id} 
     </delete>

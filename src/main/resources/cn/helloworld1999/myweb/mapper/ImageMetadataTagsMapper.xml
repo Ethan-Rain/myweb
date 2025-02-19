@@ -13,14 +13,14 @@
         image_id,tag
     </sql>
 
-    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    <select id="selectByPrimaryKey" parameterType="map" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List" />
         from image_metadata_tags
         where  image_id = #{imageId} AND tag = #{tag} 
     </select>
 
-    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    <delete id="deleteByPrimaryKey" parameterType="map">
         delete from image_metadata_tags
         where  image_id = #{imageId} AND tag = #{tag} 
     </delete>
@@ -43,12 +43,16 @@
     <update id="updateByPrimaryKeySelective" parameterType="cn.helloworld1999.myweb.demos.api.model.ImageMetadataTags">
         update image_metadata_tags
         <set>
+                <if test="tag != null">
+                    tag = #{tag},
+                </if>
         </set>
         where   image_id = #{imageId} AND tag = #{tag} 
     </update>
     <update id="updateByPrimaryKey" parameterType="cn.helloworld1999.myweb.demos.api.model.ImageMetadataTags">
         update image_metadata_tags
         set 
+            tag = #{tag}
         where   image_id = #{imageId} AND tag = #{tag} 
     </update>
 </mapper>

@@ -15,9 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -30,14 +28,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequestMapping("/api/source")
 public class Source {
 
-    private static final String IMAGE_PATH = "Z:\\2.涩涩\\恢复\\2024-10-19 22.11.39\\图片\\jpg\\folder_0";
-
     @Autowired
     private ImageImporter imageImporter;
 
     @Autowired
     private ImageMapper imageMapper;
 
+    /**
+     * 随机获取一张图片并返回
+     *
+     * @return 图片资源
+     * @throws IOException 如果读取文件时发生错误
+     */
     @RequestMapping("/getImageRandomTest")
     public ResponseEntity<Resource> getImage() throws IOException {
         // 调试输出
@@ -68,6 +70,12 @@ public class Source {
         return ResponseEntity.ok().headers(headers).body(imageResource);
     }
 
+    /**
+     * 从指定目录导入图片
+     *
+     * @param request 包含目录路径的请求体
+     * @return 包含导入结果的响应
+     */
     @RequestMapping("/importImages")
     public Map<String, Object> importImages(@RequestBody Map<String, String> request) {
         Map<String, Object> response = new HashMap<>();
@@ -107,10 +115,21 @@ public class Source {
         return response;
     }
 
+    /**
+     * 获取数据库中的图片总数
+     *
+     * @return 图片总数
+     */
     private int getTotalImages() {
         return imageMapper.countAllImages();
     }
 
+    /**
+     * 根据文件名获取内容类型
+     *
+     * @param fileName 文件名
+     * @return 内容类型
+     */
     private String getContentType(String fileName) {
         String lowerName = fileName.toLowerCase();
         if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
