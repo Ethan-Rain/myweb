@@ -27,6 +27,12 @@ public class ImageImporter {
     @Autowired
     private ImageMetadataMapper imageMetadataMapper;
 
+    /**
+     * 从指定目录导入图片
+     *
+     * @param directoryPath 图片目录路径
+     * @throws IOException 如果读取文件时发生错误
+     */
     public void importImagesFromDirectory(String directoryPath) throws IOException {
         Path imageDirPath = Paths.get(directoryPath);
         File imageDir = imageDirPath.toFile();
@@ -52,6 +58,13 @@ public class ImageImporter {
         }
     }
 
+    /**
+     * 从文件创建Image对象
+     *
+     * @param imageFile 图片文件
+     * @return Image对象
+     * @throws IOException 如果读取文件时发生错误
+     */
     private Image createImageFromFile(File imageFile) throws IOException {
         BufferedImage bufferedImage = ImageIO.read(imageFile);
         if (bufferedImage == null) {
@@ -70,6 +83,13 @@ public class ImageImporter {
         return image;
     }
 
+    /**
+     * 从文件创建ImageMetadata对象
+     *
+     * @param imageFile 图片文件
+     * @param imageId 图片ID
+     * @return ImageMetadata对象
+     */
     private ImageMetadata createImageMetadataFromFile(File imageFile, String imageId) {
         ImageMetadata metadata = new ImageMetadata();
         metadata.setImageId(imageId);

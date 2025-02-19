@@ -11,16 +11,15 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface ImageMetadataTagsMapper {
 
-    int deleteByPrimaryKey(Long id);
+    int deleteByPrimaryKey(String imageId, String tag);
 
     int insert(ImageMetadataTags record);
 
     int insertSelective(ImageMetadataTags record);
 
-    ImageMetadataTags selectByPrimaryKey(Long id);
+    ImageMetadataTags selectByPrimaryKey(String imageId, String tag);
 
     int updateByPrimaryKeySelective(ImageMetadataTags record);
 
     int updateByPrimaryKey(ImageMetadataTags record);
-
 }

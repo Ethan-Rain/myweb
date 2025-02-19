@@ -2,8 +2,6 @@ package cn.helloworld1999.myweb.mapper;
 import cn.helloworld1999.myweb.demos.api.model.Image;
 import org.apache.ibatis.annotations.Mapper;
 
-import java.util.List;
-
 /**
 * @author yixinrui
 * @description 针对表【image】的数据库操作Mapper
@@ -28,5 +26,4 @@ public interface ImageMapper {
     int countAllImages();
 
     Image selectRandomImage();
-
 }
