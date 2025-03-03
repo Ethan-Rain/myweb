@@ -2,6 +2,9 @@ package cn.helloworld1999.myweb.mapper;
 
 import cn.helloworld1999.myweb.entity.Images;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
 * @author yixinrui
@@ -27,4 +30,9 @@ public interface ImagesMapper {
     // 随机从表中抽取一条数据
     Images selectRandomImage();
     Integer existsByImageUrl(String imageUrl);
+
+    List<Images> getRandomImages(int count);
+
+    List<Images> getRandomImagesWithConditions(@Param("minScore") Integer minScore, @Param("maxScore") Integer maxScore, @Param("category") String category, @Param("status") String status, @Param("limit") Integer limit);
+
 }

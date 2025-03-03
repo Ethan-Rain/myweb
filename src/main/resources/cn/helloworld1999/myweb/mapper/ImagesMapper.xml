@@ -46,6 +46,37 @@
         WHERE image_url = #{imageUrl,jdbcType=VARCHAR}
             LIMIT 1
     </select>
+    <select id="getRandomImages" resultType="cn.helloworld1999.myweb.entity.Images">
+        select
+        <include refid="Base_Column_List" />
+        from images
+        order by rand()
+        limit #{count}
+    </select>
+
+    <select id="getRandomImagesWithConditions" resultType="cn.helloworld1999.myweb.entity.Images">
+        select
+        <include refid="Base_Column_List" />
+        from images
+        <where>
+            <if test="minScore != null and maxScore != null">
+                id in (select image_id from ratings where score between #{minScore} and #{maxScore})
+            </if>
+            <if test="category != null and category != ''">
+                and category = #{category}
+            </if>
+            <if test="status != null and status != ''">
+                and status = #{status}
+            </if>
+        </where>
+        order by rand()
+        <if test="limit != null">
+            limit #{limit}
+        </if>
+        <if test="limit == null">
+            limit 10
+        </if>
+    </select>
 
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
         delete from images
