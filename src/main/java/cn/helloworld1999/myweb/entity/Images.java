@@ -13,7 +13,7 @@ import java.util.Date;
  * @TableName images
  */
 @Data
-@Accessors(chain = true) // 新增这个注解
+@Accessors(chain = true)
 @AllArgsConstructor
 @NoArgsConstructor
 public class Images implements Serializable {

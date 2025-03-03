@@ -1,1 +1,0 @@
-import{_ as o,c as s,a as t,o as a}from"./index-7921NdeA.js";const n={name:"AboutView"};function r(c,e,p,u,l,i){return a(),s("div",null,e[0]||(e[0]=[t("h1",null,"About Us",-1),t("p",null,"This is the about page.",-1)]))}const d=o(n,[["render",r],["__scopeId","data-v-e3425e07"]]);export{d as default};
