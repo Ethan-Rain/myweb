@@ -3,7 +3,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+                     https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <!-- =============== 项目基本信息 =============== -->
@@ -32,58 +32,68 @@
 
     <!-- =============== 项目依赖配置 =============== -->
     <dependencies>
-        <!-- Spring Boot Web Starter（开发Web应用的核心依赖） -->
+        <!-- Spring Boot Web Starter：提供Web开发相关依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- ZXing二维码生成核心库 -->
+        <!-- ZXing：用于生成二维码的核心库 -->
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
             <version>3.4.1</version>
         </dependency>
 
-        <!-- ZXing二维码图像处理库 -->
+        <!-- ZXing图像处理库：提供二维码图像处理功能 -->
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
             <version>3.4.1</version>
         </dependency>
 
+        <!-- MyBatis Spring Boot集成包：提供ORM框架支持 -->
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
             <artifactId>mybatis-spring-boot-starter</artifactId>
-            <version>2.2.2</version> <!-- 根据Spring Boot版本选择合适的MyBatis版本 -->
+            <version>2.2.2</version>
         </dependency>
 
-        <!-- MySQL JDBC驱动 -->
+        <!-- MySQL驱动：提供MySQL数据库连接支持 -->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.49</version> <!-- 修改为兼容MySQL 5.7的驱动版本 -->
+            <version>5.1.49</version>
         </dependency>
 
-        <!-- Spring Boot JDBC Starter -->
+        <!-- Spring Boot JDBC：提供数据库操作支持 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
 
-        <!-- Spring Boot测试支持（仅在测试阶段有效） -->
+        <!-- 测试框架：用于单元测试和集成测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Lombok：简化Java代码的工具库 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <scope>provided</scope>
+            <scope>true</scope>
         </dependency>
 
-        <!-- SLF4J 日志依赖 -->
+        <!-- JSch：用于SSH连接的工具库 -->
+        <dependency>
+            <groupId>com.jcraft</groupId>
+            <artifactId>jsch</artifactId>
+            <version>0.1.55</version>
+        </dependency>
+
+        <!-- 日志框架：SLF4J接口和Logback实现 -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -95,25 +105,35 @@
             <version>1.2.11</version>
         </dependency>
 
-        <!-- springdoc-openapi-ui -->
+        <!-- SpringDoc：提供API文档生成功能 -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-ui</artifactId>
             <version>1.6.11</version>
         </dependency>
+
+        <!-- Google Gson：JSON序列化/反序列化库 -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency><!-- 在dependencies区块添加 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
     </dependencies>
 
     <!-- =============== 依赖版本管理 =============== -->
     <dependencyManagement>
         <dependencies>
-            <!-- 导入Spring Boot的默认依赖版本管理 -->
+            <!-- Spring Boot依赖版本管理：统一管理Spring相关依赖版本 -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring-boot.version}</version>
-                <!-- 声明为pom类型依赖，用于继承版本管理 -->
                 <type>pom</type>
-                <!-- import范围表示继承依赖管理配置 -->
                 <scope>import</scope>
             </dependency>
         </dependencies>
@@ -122,36 +142,30 @@
     <!-- =============== 构建配置 =============== -->
     <build>
         <plugins>
-            <!-- Maven编译器插件 -->
+            <!-- Maven编译器插件：控制源代码编译过程 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <!-- 源代码兼容版本 -->
                     <source>1.8</source>
-                    <!-- 目标字节码版本 -->
                     <target>1.8</target>
-                    <!-- 编译使用的字符编码 -->
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
 
-            <!-- Spring Boot Maven打包插件 -->
+            <!-- Spring Boot打包插件：构建可执行的jar包 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <!-- 指定Spring Boot的主启动类 -->
                     <mainClass>cn.helloworld1999.myweb.MywebApplication</mainClass>
                 </configuration>
                 <executions>
-                    <!-- 绑定到package阶段执行 -->
                     <execution>
                         <id>repackage</id>
                         <goals>
-                            <!-- 生成可执行jar包 -->
                             <goal>repackage</goal>
                         </goals>
                     </execution>
