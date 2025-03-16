@@ -1,0 +1,216 @@
+2025-03-17 00:02:27.388  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-9] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [http://localhost:58080/video/stream?path=%E9%B1%BC%E5%AD%90%E9%85%B1fash/%E9%B1%BC%E5%AD%90%E9%85%B1.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 1ms
+响应: null
+================
+2025-03-17 00:02:27.404  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-10] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [http://localhost:58080/video/stream?path=%E9%B1%BC%E5%AD%90%E9%85%B1fash/%E9%B1%BC%E5%AD%90%E9%85%B1.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 1ms
+响应: null
+================
+2025-03-17 00:02:44.377  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-4] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 3ms
+响应: null
+================
+2025-03-17 00:02:44.384  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-6] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 0ms
+响应: null
+================
+2025-03-17 00:02:45.860  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-8] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 1ms
+响应: null
+================
+2025-03-17 00:02:45.865  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-2] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 1ms
+响应: null
+================
+2025-03-17 00:02:59.473  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-5] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 22ms
+响应: null
+================
+2025-03-17 00:03:30.252  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-7] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 2ms
+响应: null
+================
+2025-03-17 00:03:30.259  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-9] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 0ms
+响应: null
+================
+2025-03-17 00:03:40.349  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-10] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 2ms
+响应: null
+================
+2025-03-17 00:03:40.354  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-4] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 0ms
+响应: null
+================
+2025-03-17 00:03:42.162  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-6] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash\鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 22ms
+响应: null
+================
+2025-03-17 00:04:22.025  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-2] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 3ms
+响应: null
+================
+2025-03-17 00:04:51.027  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-3] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 73ms
+响应: null
+================
+2025-03-17 00:04:52.024  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-7] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@4e7cd931, org.apache.catalina.connector.ResponseFacade@73237060]
+耗时: 4ms
+响应: null
+================
+2025-03-17 00:04:52.915  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-1] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 1877ms
+响应: null
+================
+2025-03-17 00:04:52.923  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-9] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 7ms
+响应: null
+================
+2025-03-17 00:04:53.382  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-10] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 457ms
+响应: null
+================
+2025-03-17 00:04:53.386  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-4] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@4e7cd931, org.apache.catalina.connector.ResponseFacade@73237060]
+耗时: 3ms
+响应: null
+================
+2025-03-17 00:05:12.086  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-6] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 18699ms
+响应: null
+================
+2025-03-17 00:05:27.273  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-8] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 23ms
+响应: null
+================
+2025-03-17 00:05:49.790  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-3] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 126ms
+响应: null
+================
+2025-03-17 00:05:49.916  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-7] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 118ms
+响应: null
+================
+2025-03-17 00:05:50.782  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-9] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 3ms
+响应: null
+================
+2025-03-17 00:06:25.415  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-1] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@4e7cd931, org.apache.catalina.connector.ResponseFacade@73237060]
+耗时: 35504ms
+响应: null
+================
+2025-03-17 00:08:29.144  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-10] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@4e7cd931, org.apache.catalina.connector.ResponseFacade@73237060]
+耗时: 91ms
+响应: null
+================
+2025-03-17 00:08:29.157  INFO 11900 --- [http-nio-0.0.0.0-58080-exec-4] c.h.myweb.util.LoggingAspect             : 
+=== 请求日志 ===
+路径: /video/stream
+方法: VideoController.streamVideo(..)
+参数: [鱼子酱fash/鱼子酱内部大尺度花絮.mp4, org.apache.catalina.connector.RequestFacade@334b1098, org.apache.catalina.connector.ResponseFacade@70ef33b4]
+耗时: 18ms
+响应: null
+================
