@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>首页 - 安全系统</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <style>
+        .welcome-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="welcome-container">
+            <div class="header">
+                <h2>欢迎使用安全管理系统</h2>
+                <div>
+                    <span sec:authorize="isAuthenticated()" th:text="'您好, ' + ${user?.username}"></span>
+                    <a sec:authorize="isAuthenticated()" th:href="@{/logout}" class="btn btn-outline-secondary btn-sm ms-2">退出登录</a>
+                    <a sec:authorize="!isAuthenticated()" th:href="@{/login}" class="btn btn-primary btn-sm">登录</a>
+                </div>
+            </div>
+            
+            <div class="alert alert-success" role="alert">
+                <h4 class="alert-heading">登录成功!</h4>
+                <p>您已成功登录系统。现在您可以访问系统中的各种功能。</p>
+                <hr>
+                <p class="mb-0">根据您的权限，您可以执行不同的操作。</p>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    系统功能
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a th:href="@{/user/info}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">个人信息</h5>
+                            </div>
+                            <p class="mb-1">查看和修改您的个人信息。</p>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">用户管理</h5>
+                                <small class="text-muted">管理员功能</small>
+                            </div>
+                            <p class="mb-1">管理系统用户，包括添加、修改和删除用户。</p>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action" sec:authorize="hasRole('ADMIN')">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">角色管理</h5>
+                                <small class="text-muted">管理员功能</small>
+                            </div>
+                            <p class="mb-1">管理系统角色，包括添加、修改和删除角色。</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <p class="text-muted">© 2025 安全管理系统 - 由Spring Security提供支持</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

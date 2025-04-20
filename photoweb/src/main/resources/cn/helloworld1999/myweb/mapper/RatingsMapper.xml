@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.helloworld1999.myweb.mapper.RatingsMapper">
+
+    <resultMap id="BaseResultMap" type="cn.helloworld1999.myweb.entity.Ratings">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="imageId" column="image_id" jdbcType="BIGINT"/>
+        <result property="score" column="score" jdbcType="INTEGER"/>
+        <result property="createdAt" column="created_at" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,user_id,image_id,score,created_at
+    </sql>
+
+    <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from ratings
+        where  id = #{id,jdbcType=BIGINT} 
+    </select>
+    <select id="getAllRatings" resultType="cn.helloworld1999.myweb.entity.Ratings">
+        select
+        <include refid="Base_Column_List" />
+        from ratings
+    </select>
+    <select id="getRatingsByImageId" resultType="cn.helloworld1999.myweb.entity.Ratings">
+        select
+        <include refid="Base_Column_List" />
+        from ratings
+        where  image_id = #{imageId,jdbcType=BIGINT}
+    </select>
+    <select id="filterRatingsByScore" resultType="cn.helloworld1999.myweb.entity.Ratings">
+        select
+        <include refid="Base_Column_List" />
+        from ratings
+        where  score = #{score,jdbcType=INTEGER}
+    </select>
+    <select id="filterRatingsByScoreRange" resultType="cn.helloworld1999.myweb.entity.Ratings">
+        select
+        <include refid="Base_Column_List" />
+        from ratings
+        where score between #{minScore,jdbcType=INTEGER} and #{maxScore,jdbcType=INTEGER}
+    </select>
+    <select id="filterRatingsByScoresAndOrder" resultType="cn.helloworld1999.myweb.entity.Ratings">
+        select
+        <include refid="Base_Column_List" />
+        from ratings
+        where  score between #{minScore,jdbcType=INTEGER} and #{maxScore,jdbcType=INTEGER}
+        order by score ${order}
+        <if test="order == 'asc'">
+            asc
+        </if>
+        <if test="order == 'desc'">
+            desc
+        </if>
+        <if test="order != 'asc' and order != 'desc'">
+            asc
+        </if>
+        <if test="order == null">
+            asc
+        </if>
+    </select>
+    <select id="countRatingsByScore" resultType="map">
+        select score, count(*) as count
+        from ratings
+        group by score
+    </select>
+
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+        delete from ratings
+        where  id = #{id,jdbcType=BIGINT} 
+    </delete>
+    <insert id="insert" keyColumn="id" keyProperty="id" parameterType="cn.helloworld1999.myweb.entity.Ratings" useGeneratedKeys="true">
+        insert into ratings
+        ( id,user_id,image_id,score,created_at)
+        values (#{id,jdbcType=BIGINT},#{userId,jdbcType=BIGINT},#{imageId,jdbcType=BIGINT},#{score,jdbcType=INTEGER},#{createdAt,jdbcType=TIMESTAMP})
+    </insert>
+    <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="cn.helloworld1999.myweb.entity.Ratings" useGeneratedKeys="true">
+        insert into ratings
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+                <if test="id != null">id,</if>
+                <if test="userId != null">user_id,</if>
+                <if test="imageId != null">image_id,</if>
+                <if test="score != null">score,</if>
+                <if test="createdAt">created_at,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+                <if test="id != null">#{id,jdbcType=BIGINT},</if>
+                <if test="userId != null">#{userId,jdbcType=BIGINT},</if>
+                <if test="imageId != null">#{imageId,jdbcType=BIGINT},</if>
+                <if test="score != null">#{score,jdbcType=INTEGER},</if>
+                <if test="createdAt">#{createdAt,jdbcType=TIMESTAMP},</if>
+        </trim>
+    </insert>
+    <insert id="addRatings">
+        insert into ratings
+        (image_id,score)
+        values
+        (#{imageId,jdbcType=BIGINT},#{score,jdbcType=INTEGER})
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="cn.helloworld1999.myweb.entity.Ratings">
+        update ratings
+        <set>
+                <if test="userId != null">
+                    user_id = #{userId,jdbcType=BIGINT},
+                </if>
+                <if test="imageId != null">
+                    image_id = #{imageId,jdbcType=BIGINT},
+                </if>
+                <if test="score != null">
+                    score = #{score,jdbcType=INTEGER},
+                </if>
+                <if test="createdAt != null">
+                    created_at = #{createdAt,jdbcType=TIMESTAMP},
+                </if>
+        </set>
+        where   id = #{id,jdbcType=BIGINT} 
+    </update>
+    <update id="updateByPrimaryKey" parameterType="cn.helloworld1999.myweb.entity.Ratings">
+        update ratings
+        set 
+            user_id =  #{userId,jdbcType=BIGINT},
+            image_id =  #{imageId,jdbcType=BIGINT},
+            score =  #{score,jdbcType=INTEGER},
+            created_at =  #{createdAt,jdbcType=TIMESTAMP}
+        where   id = #{id,jdbcType=BIGINT} 
+    </update>
+    <update id="changeRatings" parameterType="map">
+        update ratings
+        set score = #{score,jdbcType=INTEGER}
+        where image_id = #{imageId,jdbcType=BIGINT}
+    </update>
+</mapper>
