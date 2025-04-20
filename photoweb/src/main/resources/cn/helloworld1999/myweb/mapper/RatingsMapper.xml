@@ -50,22 +50,21 @@
         <include refid="Base_Column_List" />
         from ratings
         where  score between #{minScore,jdbcType=INTEGER} and #{maxScore,jdbcType=INTEGER}
-        order by score ${order}
         <if test="order == 'asc'">
-            asc
+            order by score asc
         </if>
         <if test="order == 'desc'">
-            desc
+            order by score desc
         </if>
         <if test="order != 'asc' and order != 'desc'">
-            asc
+            order by score asc
         </if>
         <if test="order == null">
-            asc
+            order by score asc
         </if>
     </select>
     <select id="countRatingsByScore" resultType="map">
-        select score, count(*) as count
+        select score as 'key', count(*) as 'value'
         from ratings
         group by score
     </select>
