@@ -1,0 +1,17 @@
+variables:
+  GIT_STRATEGY: none  # 禁用默认的克隆策略
+  GIT_HTTP_TIMEOUT: 300  # 增加超时时间
+
+stages:
+  - test
+
+test_job:
+  stage: test
+  before_script:
+    - echo "Starting clone process..."
+    - curl -v http://192.168.31.106:32769/testteam/myweb.git  # 测试网络连通性
+    - git clone http://192.168.31.106:32769/testteam/myweb.git /root/builds/myweb
+    - echo "Clone completed."
+  script:
+    - cd /root/builds/myweb
+    - echo "Running tests on remote server123..."

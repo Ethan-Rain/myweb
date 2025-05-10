@@ -1,0 +1,40 @@
+@startuml
+class cn.helloworld1999.webcrawler.strategy.FapelloDownloader {
+- {static} Logger logger
+- {static} HttpClient httpClient
+- String MODEL_NAME
+- int START_NUM
+- int END_NUM
+- String PATH_PREFIX_PART1
+- String PATH_PREFIX_PART2
+- String PROXY_HOST
+- int PROXY_PORT
+- String COOKIE
+- String RABBITMQ_HOST
+- int RABBITMQ_PORT
+- String RABBITMQ_USER
+- String RABBITMQ_PASS
+- String RABBITMQ_VHOST
+- String QUEUE_NAME
+- int MAX_THREADS
+- int MAX_RETRY
+- List<String> EXTENSIONS
+- Path SAVE_DIR
+- Set<String> downloadedFiles
+- void initDownloadedFiles()
+- String generateUrl(int,String)
+- Map<String,String> generateHeaders(int)
+- boolean validateResource(String)
+- void downloadSingle(String)
+- void processNumber(int)
++ void start()
++ void processMessage(String)
++ void startConsumer(String)
+- void logConfig()
+}
+
+
+
+
+cn.helloworld1999.webcrawler.strategy.DownloaderStrategy <|.. cn.helloworld1999.webcrawler.strategy.FapelloDownloader
+@enduml
