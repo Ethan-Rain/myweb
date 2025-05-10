@@ -30,11 +30,6 @@ spring:
       config:
         import-check:
           enabled: false  # 禁用配置导入检查
-  datasource:
-    url: jdbc:mysql://192.168.31.106:3306/wakaba_mutsumi?useSSL=false
-    username: wakaba_mutsumi
-    password: wakaba_mutsumi
-    driver-class-name: com.mysql.cj.jdbc.Driver
 
 # 暴露所有Actuator端点
 management:
@@ -50,6 +45,3 @@ logging:
   level:
     org.springframework.cloud.gateway: debug
     reactor.netty: debug
-mybatis:
-  mapper-locations: classpath:cn/helloworld1999/common/mapper/*.xml
-  type-aliases-package: cn.helloworld1999.common.domain

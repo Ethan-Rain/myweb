@@ -1,134 +1,90 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 项目对象模型(POM)配置文件 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                     https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <!-- =============== 项目基本信息 =============== -->
-    <!-- 组织唯一标识符（公司/组织域名的反向） -->
     <groupId>cn.helloworld1999</groupId>
-    <!-- 项目唯一标识符（模块名称） -->
     <artifactId>myweb</artifactId>
-    <!-- 当前版本号（SNAPSHOT表示开发版） -->
     <version>0.0.1-SNAPSHOT</version>
-    <!-- 项目展示名称 -->
     <name>myweb</name>
-    <!-- 项目描述 -->
     <description>myweb</description>
+    <packaging>pom</packaging>
+    <modules>
+        <module>common</module>
+        <module>gateway-service</module>
+        <module>user-service</module>
+        <module>media-service</module>
+        <module>web-crawler</module>
+
+    </modules>
 
     <!-- =============== 全局属性配置 =============== -->
     <properties>
-        <!-- Java版本要求 -->
-        <java.version>1.8</java.version>
-        <!-- 源码文件编码 -->
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- 输出报告编码 -->
+        <java.version>17</java.version>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <!-- Spring Boot版本 -->
-        <spring-boot.version>2.6.13</spring-boot.version>
+        <spring-boot.version>2.7.18</spring-boot.version>
+        <spring-cloud.version>2021.0.5</spring-cloud.version>
+        <spring-cloud-alibaba.version>2021.0.5.0</spring-cloud-alibaba.version>
+        <org-mybatis.version>2.2.2</org-mybatis.version>
+        <org-mysql.version>8.0.33</org-mysql.version>
+        <cn.hutool.version>5.8.37</cn.hutool.version>
     </properties>
 
     <!-- =============== 项目依赖配置 =============== -->
     <dependencies>
-        <!-- Spring Boot Web Starter：提供Web开发相关依赖 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <!-- ZXing：用于生成二维码的核心库 -->
-        <dependency>
-            <groupId>com.google.zxing</groupId>
-            <artifactId>core</artifactId>
-            <version>3.4.1</version>
-        </dependency>
-
-        <!-- ZXing图像处理库：提供二维码图像处理功能 -->
-        <dependency>
-            <groupId>com.google.zxing</groupId>
-            <artifactId>javase</artifactId>
-            <version>3.4.1</version>
-        </dependency>
-
-        <!-- MyBatis Spring Boot集成包：提供ORM框架支持 -->
-        <dependency>
-            <groupId>org.mybatis.spring.boot</groupId>
-            <artifactId>mybatis-spring-boot-starter</artifactId>
-            <version>2.2.2</version>
-        </dependency>
-
-        <!-- MySQL驱动：提供MySQL数据库连接支持 -->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.49</version>
-        </dependency>
-
-        <!-- Spring Boot JDBC：提供数据库操作支持 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jdbc</artifactId>
-        </dependency>
-
-        <!-- 测试框架：用于单元测试和集成测试 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Lombok：简化Java代码的工具库 -->
+        <!-- 仅保留必要的工具类依赖 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <scope>true</scope>
+            <version>1.18.26</version>
+            <optional>true</optional>
         </dependency>
 
-        <!-- JSch：用于SSH连接的工具库 -->
+        <!-- 新增Nacos依赖 -->
         <dependency>
-            <groupId>com.jcraft</groupId>
-            <artifactId>jsch</artifactId>
-            <version>0.1.55</version>
-        </dependency>
-
-        <!-- 日志框架：SLF4J接口和Logback实现 -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.36</version>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+            <version>${spring-cloud-alibaba.version}</version>
         </dependency>
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.11</version>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+            <version>${spring-cloud-alibaba.version}</version>
         </dependency>
-
-        <!-- SpringDoc：提供API文档生成功能 -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-ui</artifactId>
-            <version>1.6.11</version>
-        </dependency>
-
-        <!-- Google Gson：JSON序列化/反序列化库 -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.10.1</version>
-        </dependency><!-- 在dependencies区块添加 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bootstrap</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>${cn.hutool.version}</version>
         </dependency>
 
     </dependencies>
 
     <!-- =============== 依赖版本管理 =============== -->
     <dependencyManagement>
+        <!-- 依赖管理 -->
         <dependencies>
-            <!-- Spring Boot依赖版本管理：统一管理Spring相关依赖版本 -->
+            <!-- Spring Boot依赖版本管理 -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -136,20 +92,79 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- Spring Cloud依赖版本管理 -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Spring Cloud Alibaba依赖版本管理 -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- 其他依赖版本管理 -->
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter</artifactId>
+                <version>2.2.2</version>
+            </dependency>
+
+            <!-- SLF4J接口版本管理 -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>1.7.36</version>
+            </dependency>
+
+            <!-- Logback实现版本管理 -->
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.2.11</version>
+            </dependency>
+
+            <!-- SpringDoc版本管理 -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-ui</artifactId>
+                <version>1.7.0</version>
+            </dependency>
+
+            <!-- Google Gson版本管理 -->
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>2.10.1</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${cn.hutool.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
     <!-- =============== 构建配置 =============== -->
     <build>
         <plugins>
-            <!-- Maven编译器插件：控制源代码编译过程 -->
+            <!-- Maven编译器插件：更新source和target版本 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>17</source>
+                    <target>17</target>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
