@@ -1,0 +1,7 @@
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ephemeral: true
+        heart-beat-interval: 5000
+        heart-beat-timeout: 15000
