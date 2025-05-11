@@ -45,6 +45,13 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-test</artifactId>
+            <version>${spring-boot.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- 新增Nacos依赖 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
