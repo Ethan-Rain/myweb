@@ -17,6 +17,7 @@
         <module>user-service</module>
         <module>media-service</module>
         <module>web-crawler</module>
+        <module>security</module>
 
     </modules>
 

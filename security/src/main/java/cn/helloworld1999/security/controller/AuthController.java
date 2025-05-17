@@ -1,4 +1,4 @@
-package cn.helloworld1999.gateway.controller;
+package cn.helloworld1999.security.controller;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
