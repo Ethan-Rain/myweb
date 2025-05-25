@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.helloworld1999.common.mapper.UserRolesMapperExt">
+
+    <!-- 根据用户ID查询用户角色 -->
+    <select id="selectByUserId" resultType="cn.helloworld1999.common.domain.UserRoles">
+        SELECT * FROM user_roles WHERE user_id = #{userId}
+    </select>
+
+</mapper>

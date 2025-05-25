@@ -34,6 +34,11 @@ spring:
       config:
         import-check:
           enabled: false  # 禁用配置导入检查
+  mybatis:
+    mapper-locations: classpath:mapper/*.xml
+    type-aliases-package: cn.helloworld1999.common.domain
+    configuration:
+      map-underscore-to-camel-case: true
   datasource:
     url: jdbc:mysql://192.168.31.106:3306/wakaba_mutsumi?useSSL=false
     username: wakaba_mutsumi
@@ -68,3 +73,6 @@ logging:
 mybatis:
   mapper-locations: classpath:cn/helloworld1999/common/mapper/*.xml
   type-aliases-package: cn.helloworld1999.common.domain
+jwt:
+  secret: your-secret-key  # JWT签名密钥
+  expiration: 86400000     # JWT过期时间（毫秒），这里设置为24小时
