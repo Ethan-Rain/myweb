@@ -30,6 +30,23 @@ spring:
       config:
         import-check:
           enabled: false  # 禁用配置导入检查
+  datasource:
+    url: jdbc:mysql://192.168.31.106:3306/wakaba_mutsumi?useSSL=false
+    username: wakaba_mutsumi
+    password: wakaba_mutsumi
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Redis配置
+  redis:
+    host: 192.168.31.106
+    port: 26739
+    password: EMFFkhXxtKDwHpmp
+    timeout: 5000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
 
 # 暴露所有Actuator端点
 management:
