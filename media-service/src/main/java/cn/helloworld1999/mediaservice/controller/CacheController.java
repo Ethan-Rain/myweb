@@ -32,7 +32,7 @@ public class CacheController {
         Map<String, Object> result = new HashMap<>();
         try {
             // 缓存图片数据
-            List<String> allImages = mediaService.getRandomImages("1");
+            List<String> allImages = mediaService.getRandomImages(1);
             redisTemplate.opsForValue().set("cache:images", allImages, 1, TimeUnit.HOURS);
             
             // 缓存视频数据

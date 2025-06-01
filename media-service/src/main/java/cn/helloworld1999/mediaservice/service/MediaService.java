@@ -57,7 +57,7 @@ public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMe
      * @param category 分类ID
      * @return 随机图片列表
      */
-    public List<String> getRandomImages(String category) {
+    public List<String> getRandomImages(Integer category) {
         // 查询指定分类下的所有图片
         List<Media> mediaList = baseMapper.selectList(
             new QueryWrapper<Media>()

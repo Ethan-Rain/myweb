@@ -29,7 +29,7 @@ public class RandomMediaController {
     private RedisTemplate<String, Object> redisTemplate;
 
     @GetMapping("/image")
-    public Map<String, Object> getRandomImage(@RequestParam String category) {
+    public Map<String, Object> getRandomImage(@RequestParam Integer category) {
         Map<String, Object> result = new HashMap<>();
         try {
             // 从Redis缓存中获取图片列表
