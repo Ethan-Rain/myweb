@@ -10,13 +10,41 @@ spring:
         locator:
           enabled: true  # 启用服务发现
           lower-case-service-id: true  # 服务名小写
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:8082"
+            allowedMethods: "GET, POST, PUT, DELETE, OPTIONS"
+            allowedHeaders: "*"
+            allowCredentials: true
       routes:
-#      - id: user-service
-#        uri: lb://user-service
-#        predicates:
-#          - Path=/api/user/**
-#        filters:
-#          - StripPrefix=1
+        - id: static-resources
+          uri: file:///static/
+          predicates:
+            - Path=/
+            - Path=/index.html
+            - Path=/static/**
+
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**
+          filters:
+            - StripPrefix=1
+
+        - id: media-service
+          uri: lb://media-service
+          predicates:
+            - Path=/api/media/**
+          filters:
+            - RewritePath=/api/media/(?<segment>.*), /random/$\{segment}
+
+        - id: security-service
+          uri: lb://security
+          predicates:
+            - Path=/api/security/**
+          filters:
+            - StripPrefix=1
     nacos:
       discovery:
         enabled: true
@@ -45,3 +73,8 @@ logging:
   level:
     org.springframework.cloud.gateway: debug
     reactor.netty: debug
+    org.springframework.cloud.gateway.filter: debug
+    org.springframework.cloud.gateway.filter.factory: debug
+    org.springframework.cloud.gateway.route: debug
+    org.springframework.web: debug
+    org.springframework.http: debug

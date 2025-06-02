@@ -176,12 +176,11 @@ public class FileScanner {
                 // 使用Redis存储
                 try {
                     String key = MEDIA_KEY_PREFIX + file.getAbsolutePath();
-                    // 生成唯一ID
-                    String mediaId = UUID.randomUUID().toString();
-                    media.setId(Long.parseLong(mediaId));
-                    mediaContent.setId(Long.parseLong(mediaId));
+                    // 保存媒体信息，使用数据库自增ID
+                    mediaMapper.insert(media);
                     
-                    // 设置内容信息
+                    // 设置内容信息，使用媒体ID
+                    mediaContent.setId(media.getId() + 1); // 确保内容ID与媒体ID不同但有关联
                     mediaContent.setMediaId(media.getId());
                     mediaContent.setFilePath(file.getAbsolutePath());
                     mediaContent.setFileName(file.getName());
@@ -208,15 +207,11 @@ public class FileScanner {
             } else {
                 // 使用MySQL存储
                 try {
-                    // 生成唯一ID
-                    String mediaId = UUID.randomUUID().toString();
-                    media.setId(Long.parseLong(mediaId));
-                    mediaContent.setId(Long.parseLong(mediaId));
-                    
-                    // 保存媒体信息
+                    // 保存媒体信息，使用数据库自增ID
                     mediaMapper.insert(media);
                     
-                    // 设置内容信息
+                    // 设置内容信息，使用媒体ID
+                    mediaContent.setId(media.getId() + 1); // 确保内容ID与媒体ID不同但有关联
                     mediaContent.setMediaId(media.getId());
                     mediaContent.setFilePath(file.getAbsolutePath());
                     mediaContent.setFileName(file.getName());

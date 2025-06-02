@@ -6,50 +6,124 @@ import cn.helloworld1999.mediaservice.mapper.MediaContentMapper;
 import cn.helloworld1999.mediaservice.mapper.MediaMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 媒体服务实现
  */
 @Service
 public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMediaService {
-
+    @Autowired
+    private RedisTemplate redisTemplate;
     @Autowired
     private MediaContentMapper mediaContentMapper;
+    Logger logger = LoggerFactory.getLogger(MediaService.class);
 
-    /**
-     * 获取指定分类下的随机视频
-     * @param category 分类ID
-     * @return 随机视频列表
-     */
-    public List<String> getRandomVideos(String category) {
-        // 查询指定分类下的所有视频
-        List<Media> mediaList = baseMapper.selectList(
-            new QueryWrapper<Media>()
-                .eq("media_type", "VIDEO")
-                .eq("category_id", category)
-                .eq("status", "ACTIVE")
-        );
 
-        if (mediaList.isEmpty()) {
+    public List<String> getAllVideos(Long category) {
+        try {
+            logger.info("开始查询视频数据，分类ID: {}", category);
+            
+            // 使用联表查询获取视频路径
+            QueryWrapper<MediaContent> queryWrapper = new QueryWrapper<>();
+            queryWrapper.select("media_content.file_path")
+                    .inSql("media_id", "SELECT id FROM media WHERE media_type = 'VIDEO' AND category_id = " + category + " AND status = 'ACTIVE'");
+            List<MediaContent> contents = mediaContentMapper.selectList(queryWrapper);
+            
+            logger.info("查询到视频总数: {}", contents.size());
+            
+            List<String> videoPaths = new ArrayList<>();
+            for (MediaContent content : contents) {
+                if (content.getFilePath() != null) {
+                    videoPaths.add(content.getFilePath());
+                }
+            }
+            
+            return videoPaths;
+        } catch (Exception e) {
+            logger.error("获取视频列表失败", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<String> getAllImages(Long category) {
+        try {
+            logger.info("开始查询图片数据，分类ID: {}", category);
+            
+            // 使用联表查询获取图片路径
+            QueryWrapper<MediaContent> queryWrapper = new QueryWrapper<>();
+            queryWrapper.select("media_content.file_path")
+                    .inSql("media_id", "SELECT id FROM media WHERE media_type = 'IMAGE' AND category_id = " + category + " AND status = 'ACTIVE'");
+            List<MediaContent> contents = mediaContentMapper.selectList(queryWrapper);
+            
+            logger.info("查询到图片总数: {}", contents.size());
+            
+            List<String> imagePaths = new ArrayList<>();
+            for (MediaContent content : contents) {
+                if (content.getFilePath() != null) {
+                    imagePaths.add(content.getFilePath());
+                }
+            }
+            
+            return imagePaths;
+        } catch (Exception e) {
+            logger.error("获取图片列表失败", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<String> getRandomVideos(Long category) {
+        try {
+            logger.info("开始获取随机视频，分类ID: {}", category);
+            
+            // 从Redis获取所有视频
+            ValueOperations<String, Object> ops = redisTemplate.opsForValue();
+            String cacheKey = "cache:videos:" + category;
+            logger.info("尝试从Redis获取缓存，key: {}", cacheKey);
+            
+            List<String> allVideos = (List<String>) ops.get(cacheKey);
+            if (CollectionUtils.isEmpty(allVideos)) {
+                logger.info("Redis中未找到缓存，从数据库获取视频...");
+                // 如果Redis中没有数据，从数据库获取
+                allVideos = getAllVideos(category);
+                logger.info("从数据库获取到 {} 个视频", allVideos != null ? allVideos.size() : 0);
+                
+                // 将结果存入Redis
+                if (!CollectionUtils.isEmpty(allVideos)) {
+                    logger.info("将视频数据存入Redis，key: {}", cacheKey);
+                    ops.set(cacheKey, allVideos, 1, TimeUnit.HOURS);
+                }
+            } else {
+                logger.info("从Redis获取到 {} 个视频", allVideos.size());
+            }
+            
+            if (CollectionUtils.isEmpty(allVideos)) {
+                logger.warn("未找到视频数据，分类ID: {}", category);
+                return Collections.emptyList();
+            }
+            
+            // 随机选择一个视频
+            int randomIndex = new Random().nextInt(allVideos.size());
+            String selectedVideo = allVideos.get(randomIndex);
+            logger.info("随机选择第 {} 个视频: {}", randomIndex, selectedVideo);
+            
+            return Collections.singletonList(selectedVideo);
+        } catch (Exception e) {
+            logger.error("获取随机视频失败", e);
             return Collections.emptyList();
         }
-
-        // 获取对应的媒体内容
-        List<String> videoPaths = new ArrayList<>();
-        for (Media media : mediaList) {
-            MediaContent content = mediaContentMapper.selectById(media.getId());
-            if (content != null) {
-                videoPaths.add(content.getFilePath());
-            }
-        }
-
-        return videoPaths;
     }
 
     /**
@@ -57,28 +131,45 @@ public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMe
      * @param category 分类ID
      * @return 随机图片列表
      */
-    public List<String> getRandomImages(Integer category) {
-        // 查询指定分类下的所有图片
-        List<Media> mediaList = baseMapper.selectList(
-            new QueryWrapper<Media>()
-                .eq("media_type", "IMAGE")
-                .eq("category_id", category)
-                .eq("status", "ACTIVE")
-        );
-
-        if (mediaList.isEmpty()) {
+    public List<String> getRandomImages(Long category) {
+        try {
+            logger.info("开始获取随机图片，分类ID: {}", category);
+            
+            // 从Redis获取所有图片
+            ValueOperations<String, Object> ops = redisTemplate.opsForValue();
+            String cacheKey = "cache:images:" + category;
+            logger.info("尝试从Redis获取缓存，key: {}", cacheKey);
+            
+            List<String> allImages = (List<String>) ops.get(cacheKey);
+            if (CollectionUtils.isEmpty(allImages)) {
+                logger.info("Redis中未找到缓存，从数据库获取图片...");
+                // 如果Redis中没有数据，从数据库获取
+                allImages = getAllImages(category);
+                logger.info("从数据库获取到 {} 张图片", allImages != null ? allImages.size() : 0);
+                
+                // 将结果存入Redis
+                if (!CollectionUtils.isEmpty(allImages)) {
+                    logger.info("将图片数据存入Redis，key: {}", cacheKey);
+                    ops.set(cacheKey, allImages, 1, TimeUnit.HOURS);
+                }
+            } else {
+                logger.info("从Redis获取到 {} 张图片", allImages.size());
+            }
+            
+            if (CollectionUtils.isEmpty(allImages)) {
+                logger.warn("未找到图片数据，分类ID: {}", category);
+                return Collections.emptyList();
+            }
+            
+            // 随机选择一张图片
+            int randomIndex = new Random().nextInt(allImages.size());
+            String selectedImage = allImages.get(randomIndex);
+            logger.info("随机选择第 {} 张图片: {}", randomIndex, selectedImage);
+            
+            return Collections.singletonList(selectedImage);
+        } catch (Exception e) {
+            logger.error("获取随机图片失败", e);
             return Collections.emptyList();
         }
-
-        // 获取对应的媒体内容
-        List<String> imagePaths = new ArrayList<>();
-        for (Media media : mediaList) {
-            MediaContent content = mediaContentMapper.selectById(media.getId());
-            if (content != null) {
-                imagePaths.add(content.getFilePath());
-            }
-        }
-
-        return imagePaths;
     }
 }

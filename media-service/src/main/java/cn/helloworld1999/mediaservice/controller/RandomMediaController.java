@@ -1,19 +1,20 @@
 package cn.helloworld1999.mediaservice.controller;
 
 import cn.helloworld1999.mediaservice.service.MediaService;
+import cn.helloworld1999.mediaservice.config.FileConfig;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -28,58 +29,227 @@ public class RandomMediaController {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
+    @Autowired
+    private FileConfig fileConfig;
+    
+    private String getMimeType(String filename) {
+        String extension = FilenameUtils.getExtension(filename).toLowerCase();
+        switch (extension) {
+            case "jpg":
+            case "jpeg":
+                return "image/jpeg";
+            case "png":
+                return "image/png";
+            case "gif":
+                return "image/gif";
+            case "mp4":
+                return "video/mp4";
+            case "webm":
+                return "video/webm";
+            case "ogg":
+            case "ogv":
+                return "video/ogg";
+            default:
+                return "application/octet-stream";
+        }
+    }
+
     @GetMapping("/image")
-    public Map<String, Object> getRandomImage(@RequestParam Integer category) {
+    public ResponseEntity<Map<String, Object>> getRandomImage(
+            @RequestParam(value = "category", required = false, defaultValue = "1") Long category) {
+        
         Map<String, Object> result = new HashMap<>();
+        logger.info("开始处理获取随机图片请求，分类ID: {}", category);
+        
         try {
-            // 从Redis缓存中获取图片列表
-            List<String> cachedImages = (List<String>) redisTemplate.opsForValue().get("cache:images");
-            if (cachedImages == null || cachedImages.isEmpty()) {
-                // 如果缓存不存在，从MySQL获取
-                List<String> randomImages = mediaService.getRandomImages(category);
-                redisTemplate.opsForValue().set("cache:images", randomImages, 1, TimeUnit.HOURS);
-                cachedImages = randomImages;
+            // 获取随机图片
+            logger.info("正在从服务层获取随机图片...");
+            List<String> randomImages = mediaService.getRandomImages(category);
+            logger.info("从服务层获取到随机图片列表: {}", randomImages);
+            
+            if (randomImages == null || randomImages.isEmpty()) {
+                String errorMsg = "未找到图片，分类ID: " + category;
+                logger.warn(errorMsg);
+                result.put("error", errorMsg);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
             }
             
-            // 随机选择一张图片
-            if (!cachedImages.isEmpty()) {
-                int randomIndex = new Random().nextInt(cachedImages.size());
-                result.put("image", cachedImages.get(randomIndex));
-            } else {
-                result.put("error", "没有找到图片资源");
+            // 获取随机图片路径
+            String imagePath = randomImages.get(0);
+            logger.info("获取到随机图片路径: {}", imagePath);
+            
+            if (fileConfig == null) {
+                String errorMsg = "FileConfig 未注入";
+                logger.error(errorMsg);
+                result.put("error", errorMsg);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
             }
+            
+            // 构建完整文件路径
+            String baseDir = fileConfig.getBaseDir();
+            // 处理路径分隔符问题
+            String normalizedImagePath = imagePath.replace("\\", "/");
+            if (normalizedImagePath.startsWith("/")) {
+                normalizedImagePath = normalizedImagePath.substring(1);
+            }
+            String fullPath = baseDir + "/" + normalizedImagePath;
+            
+            logger.info("基础目录: {}", baseDir);
+            logger.info("处理后的相对路径: {}", normalizedImagePath);
+            logger.info("完整文件路径: {}", fullPath);
+            
+            // 检查文件是否存在
+            File imageFile = new File(fullPath);
+            boolean fileExists = imageFile.exists();
+            boolean isFile = imageFile.isFile();
+            boolean canRead = imageFile.canRead();
+            
+            logger.info("文件存在: {}, 是文件: {}, 可读: {}", fileExists, isFile, canRead);
+            
+            if (!fileExists) {
+                // 尝试直接使用路径（不拼接baseDir）
+                File altFile = new File(imagePath);
+                if (altFile.exists()) {
+                    imageFile = altFile;
+                    logger.info("使用相对路径找到文件: {}", imagePath);
+                } else {
+                    String errorMsg = String.format("图片文件不存在: %s (当前工作目录: %s)", 
+                        fullPath, System.getProperty("user.dir"));
+                    logger.error(errorMsg);
+                    result.put("error", errorMsg);
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
+                }
+            }
+            
+            if (!imageFile.canRead()) {
+                String errorMsg = String.format("图片文件不可读，请检查权限: %s", imageFile.getAbsolutePath());
+                logger.error(errorMsg);
+                result.put("error", errorMsg);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
+            }
+            
+            // 读取文件内容
+            logger.info("正在读取图片文件内容...");
+            byte[] fileContent = Files.readAllBytes(imageFile.toPath());
+            String base64Image = Base64.getEncoder().encodeToString(fileContent);
+            
+            // 获取MIME类型
+            String mimeType = getMimeType(imageFile.getName());
+            logger.info("检测到MIME类型: {}", mimeType);
+            
+            // 构建响应
+            result.put("type", "image");
+            result.put("data", "data:" + mimeType + ";base64," + base64Image);
+            result.put("filename", imageFile.getName());
+            logger.info("成功处理图片文件，大小: {} 字节", fileContent.length);
+            
+            return ResponseEntity.ok(result);
+            
         } catch (Exception e) {
-            logger.error("获取随机图片失败", e);
-            result.put("error", "获取随机图片失败: " + e.getMessage());
+            String errorMsg = "获取随机图片失败: " + e.getMessage();
+            logger.error(errorMsg, e);
+            result.put("error", errorMsg);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
         }
-        return result;
     }
 
     @GetMapping("/video")
-    public Map<String, Object> getRandomVideo(@RequestParam String category) {
+    public ResponseEntity<Map<String, Object>> getRandomVideo(
+            @RequestParam(value = "category", required = false, defaultValue = "1") Long category) {
+        
         Map<String, Object> result = new HashMap<>();
+        logger.info("开始处理获取随机视频请求，分类ID: {}", category);
+        
         try {
-            // 从Redis缓存中获取视频列表
-            List<String> cachedVideos = (List<String>) redisTemplate.opsForValue().get("cache:videos");
-            if (cachedVideos == null || cachedVideos.isEmpty()) {
-                // 如果缓存不存在，从MySQL获取
-                List<String> randomVideos = mediaService.getRandomVideos(category);
-                redisTemplate.opsForValue().set("cache:videos", randomVideos, 1, TimeUnit.HOURS);
-                cachedVideos = randomVideos;
+            // 获取随机视频
+            logger.info("正在从服务层获取随机视频...");
+            List<String> randomVideos = mediaService.getRandomVideos(category);
+            logger.info("从服务层获取到随机视频列表: {}", randomVideos);
+            
+            if (randomVideos == null || randomVideos.isEmpty()) {
+                String errorMsg = "未找到视频，分类ID: " + category;
+                logger.warn(errorMsg);
+                result.put("error", errorMsg);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
             }
             
-            // 随机选择一个视频
-            if (!cachedVideos.isEmpty()) {
-                int randomIndex = new Random().nextInt(cachedVideos.size());
-                result.put("video", cachedVideos.get(randomIndex));
-            } else {
-                result.put("error", "没有找到视频资源");
+            // 获取随机视频路径
+            String videoPath = randomVideos.get(0);
+            logger.info("获取到随机视频路径: {}", videoPath);
+            
+            if (fileConfig == null) {
+                String errorMsg = "FileConfig 未注入";
+                logger.error(errorMsg);
+                result.put("error", errorMsg);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
             }
+            
+            // 构建完整文件路径
+            String baseDir = fileConfig.getBaseDir();
+            // 处理路径分隔符问题
+            String normalizedVideoPath = videoPath.replace("\\", "/");
+            if (normalizedVideoPath.startsWith("/")) {
+                normalizedVideoPath = normalizedVideoPath.substring(1);
+            }
+            String fullPath = baseDir + "/" + normalizedVideoPath;
+            
+            logger.info("基础目录: {}", baseDir);
+            logger.info("处理后的相对路径: {}", normalizedVideoPath);
+            logger.info("完整文件路径: {}", fullPath);
+            
+            // 检查文件是否存在
+            File videoFile = new File(fullPath);
+            boolean fileExists = videoFile.exists();
+            boolean isFile = videoFile.isFile();
+            boolean canRead = videoFile.canRead();
+            
+            logger.info("文件存在: {}, 是文件: {}, 可读: {}", fileExists, isFile, canRead);
+            
+            if (!fileExists) {
+                // 尝试直接使用路径（不拼接baseDir）
+                File altFile = new File(videoPath);
+                if (altFile.exists()) {
+                    videoFile = altFile;
+                    logger.info("使用相对路径找到文件: {}", videoPath);
+                } else {
+                    String errorMsg = String.format("视频文件不存在: %s (当前工作目录: %s)", 
+                        fullPath, System.getProperty("user.dir"));
+                    logger.error(errorMsg);
+                    result.put("error", errorMsg);
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
+                }
+            }
+            
+            if (!videoFile.canRead()) {
+                String errorMsg = String.format("视频文件不可读，请检查权限: %s", videoFile.getAbsolutePath());
+                logger.error(errorMsg);
+                result.put("error", errorMsg);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
+            }
+            
+            // 读取文件内容
+            logger.info("正在读取视频文件内容...");
+            byte[] fileContent = Files.readAllBytes(videoFile.toPath());
+            String base64Video = Base64.getEncoder().encodeToString(fileContent);
+            
+            // 获取MIME类型
+            String mimeType = getMimeType(videoFile.getName());
+            logger.info("检测到MIME类型: {}", mimeType);
+            
+            // 构建响应
+            result.put("type", "video");
+            result.put("data", "data:" + mimeType + ";base64," + base64Video);
+            result.put("filename", videoFile.getName());
+            logger.info("成功处理视频文件，大小: {} 字节", fileContent.length);
+            
+            return ResponseEntity.ok(result);
+            
         } catch (Exception e) {
-            logger.error("获取随机视频失败", e);
-            result.put("error", "获取随机视频失败: " + e.getMessage());
+            String errorMsg = "获取随机视频失败: " + e.getMessage();
+            logger.error(errorMsg, e);
+            result.put("error", errorMsg);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
         }
-        return result;
     }
 
 

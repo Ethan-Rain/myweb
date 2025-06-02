@@ -11,12 +11,16 @@ spring:
           enabled: true  # 启用服务发现
           lower-case-service-id: true  # 服务名小写
       routes:
-#      - id: user-service
-#        uri: lb://user-service
-#        predicates:
-#          - Path=/api/user/**
-#        filters:
-#          - StripPrefix=1
+        - id: media-files
+          uri: file:///192.168.31.103/存储空间/2.1.newSeSe/
+          predicates:
+            - Path=/192.168.31.103/**
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**
+          filters:
+            - StripPrefix=1
     nacos:
       discovery:
         enabled: true
@@ -30,6 +34,12 @@ spring:
       config:
         import-check:
           enabled: false  # 禁用配置导入检查
+
+  # 文件服务器配置
+  # 文件配置
+  file:
+    base-dir: /192.168.31.103/存储空间/2.1.newSeSe/
+    base-url: http://localhost:8082/
   datasource:
     url: jdbc:mysql://192.168.31.106:3306/wakaba_mutsumi?useSSL=false
     username: wakaba_mutsumi
@@ -47,6 +57,9 @@ spring:
         max-active: 8
         max-idle: 8
         min-idle: 0
+  web:
+    resources:
+      static-locations: classpath:/static/,file:///192.168.31.103/存储空间/2.1.newSeSe/
 
 # 暴露所有Actuator端点
 management:

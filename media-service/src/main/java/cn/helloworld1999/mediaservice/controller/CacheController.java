@@ -31,13 +31,15 @@ public class CacheController {
     public Map<String, Object> syncToRedis() {
         Map<String, Object> result = new HashMap<>();
         try {
-            // 缓存图片数据
-            List<String> allImages = mediaService.getRandomImages(1);
-            redisTemplate.opsForValue().set("cache:images", allImages, 1, TimeUnit.HOURS);
+            // 获取所有图片
+            List<String> allImages = mediaService.getAllImages(1L);
+            logger.info("获取到图片数量: {}", allImages.size());
+            redisTemplate.opsForValue().set("cache:images", allImages, 24, TimeUnit.HOURS);
             
-            // 缓存视频数据
-            List<String> allVideos = mediaService.getRandomVideos("1");
-            redisTemplate.opsForValue().set("cache:videos", allVideos, 1, TimeUnit.HOURS);
+            // 获取所有视频
+            List<String> allVideos = mediaService.getAllVideos(1L);
+            logger.info("获取到视频数量: {}", allVideos.size());
+            redisTemplate.opsForValue().set("cache:videos", allVideos, 24, TimeUnit.HOURS);
             
             result.put("success", true);
             result.put("message", "缓存同步成功");
