@@ -45,7 +45,10 @@
         .media-list {
             position: relative;
             width: 100%;
-
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
         }
         
         .media-item {
@@ -387,8 +390,12 @@
                     
                     mediaList.appendChild(mediaItem);
                     
-                    // 滚动到新内容
-                    mediaItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    // 滚动到新内容，使其在视口中居中
+                    mediaItem.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'center'
+                    });
                 } else {
                     console.error('Media not found:', data.error);
                     const errorElement = document.createElement('div');
@@ -506,11 +513,35 @@
             
             // 向左滑动，加载下一个
             if (diff > SWIPE_THRESHOLD) {
-                window.scrollBy(0, window.innerHeight * 0.8);
+                const currentScroll = window.scrollY;
+                const targetElement = document.elementFromPoint(
+                    window.innerWidth / 2,
+                    window.innerHeight * 0.8
+                );
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                } else {
+                    window.scrollBy(0, window.innerHeight * 0.8);
+                }
             } 
             // 向右滑动，加载上一个
             else if (diff < -SWIPE_THRESHOLD) {
-                window.scrollBy(0, -window.innerHeight * 0.8);
+                const currentScroll = window.scrollY;
+                const targetElement = document.elementFromPoint(
+                    window.innerWidth / 2,
+                    window.innerHeight * 0.2
+                );
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                } else {
+                    window.scrollBy(0, -window.innerHeight * 0.8);
+                }
             }
         }
 
