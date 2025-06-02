@@ -2,13 +2,23 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Media Viewer</title>
+
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --safe-area-inset-top: env(safe-area-inset-top, 0);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom, 0);
         }
 
         body {
@@ -16,33 +26,74 @@
             background-color: #000;
             color: #fff;
             overflow-x: hidden;
+            padding-top: var(--safe-area-inset-top);
+            padding-bottom: var(--safe-area-inset-bottom);
         }
 
         .container {
             position: relative;
-            width: 100vw;
-            height: 100vh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            min-height: 100vh;
+            padding: 20px 10px;
+            padding-top: 80px; /* 为顶部筛选栏留出空间 */
+            padding-bottom: 40px;
+            max-width: 1000px;
+            margin: 0 auto;
+            box-sizing: border-box;
         }
 
-        .media-item {
+        .media-list {
             position: relative;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
+
+        }
+        
+        .media-item {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .media-container {
+            position: relative;
+            width: 100%;
+            background-color: #1a1a1a;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            background-color: #1a1a1a;
-            padding: 20px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        
+        .media-container img,
+        .media-container video {
+            max-width: 100%;
+            max-height: 70vh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block;
+            touch-action: manipulation;
         }
 
-        .media-item img,
-        .media-item video {
-            max-width: 100%;
-            max-height: 100%;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        .media-filename {
+            width: 100%;
+            padding: 12px 16px;
+            color: #bbb;
+            font-size: 14px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-weight: 500;
+            box-sizing: border-box;
         }
 
         .loading {
@@ -51,9 +102,14 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: #fff;
-            font-size: 24px;
+            font-size: 16px;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
             opacity: 0;
             transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
         }
 
         .loading.active {
@@ -62,20 +118,32 @@
 
         .filter-container {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 0;
+            left: 0;
+            right: 0;
             z-index: 1000;
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            padding: 15px 16px;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
         }
 
         .filter-select {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 5px;
-            border: none;
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
             color: #fff;
+            font-size: 14px;
+            appearance: none;
+            -webkit-appearance: none;
             cursor: pointer;
+            outline: none;
         }
 
         .filter-select option {
@@ -84,20 +152,22 @@
         }
         
         .filter-btn {
-            background: rgba(0, 0, 0, 0.7);
-            border: none;
-            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
             color: #fff;
-            padding: 10px 15px;
-            cursor: pointer;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.2s;
+            cursor: pointer;
+            transition: all 0.2s;
         }
         
-        .filter-btn:hover {
-            background: rgba(0, 0, 0, 0.9);
+        .filter-btn:active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(0.95);
         }
         
         .media-container {
@@ -143,18 +213,18 @@
 <body>
     <div class="container">
         <div class="filter-container">
-            <select class="filter-select" id="mediaTypeSelect">
-                <option value="all">全部</option>
-                <option value="image">图片</option>
-                <option value="video">视频</option>
-            </select>
-            <select class="filter-select" id="categorySelect">
+            <select class="filter-select" id="categorySelect" aria-label="选择分类">
                 <option value="1">分类1</option>
                 <option value="2">分类2</option>
                 <option value="3">分类3</option>
             </select>
-            <button id="refreshBtn" class="filter-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <select class="filter-select" id="mediaTypeSelect" aria-label="选择媒体类型">
+                <option value="all">全部</option>
+                <option value="image">图片</option>
+                <option value="video">视频</option>
+            </select>
+            <button id="refreshBtn" class="filter-btn" aria-label="刷新">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M23 4v6h-6"></path>
                     <path d="M1 20v-6h6"></path>
                     <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
@@ -192,6 +262,11 @@
         let currentMediaType = settings.mediaType;
         let isLoading = false;
         
+        // 滑动相关变量
+        let currentIndex = 0;
+        let mediaItems = [];
+        let isAnimating = false;
+        
         // 设置下拉框的选中状态
         categorySelect.value = currentCategory;
         mediaTypeSelect.value = currentMediaType;
@@ -199,6 +274,7 @@
         // 获取媒体内容
         async function fetchMedia(type) {
             if (isLoading) return;
+            
             isLoading = true;
             loading.classList.add('active');
             console.log(`Fetching ${type} for category ${currentCategory}`);
@@ -216,8 +292,13 @@
                 console.log('Response data:', data);
 
                 if (data.data) {  // 检查返回的 data 字段
+                    const mediaItem = document.createElement('div');
+                    mediaItem.className = 'media-item';
+                    
+                    const mediaContainer = document.createElement('div');
+                    mediaContainer.className = 'media-container';
+                    
                     const mediaElement = document.createElement(type === 'image' ? 'img' : 'video');
-                    mediaElement.className = '';
                     
                     // 检查是否有错误
                     if (data.error) {
@@ -228,42 +309,85 @@
                     mediaElement.src = data.data;
                     
                     if (data.type === 'image') {
-                        mediaElement.alt = '随机图片';
-                        mediaElement.loading = 'lazy'; // 图片懒加载
-                        // 添加图片加载错误处理
+                        mediaElement.alt = data.filename || '随机图片';
+                        mediaElement.loading = 'lazy';
+                        mediaElement.decoding = 'async';
+                        
+                        // 图片加载错误处理
                         mediaElement.onerror = function() {
                             console.error('图片加载失败:', data.filename || '未知文件');
-                            this.alt = '图片加载失败';
-                            this.style.border = '2px solid red';
+                            this.style.display = 'none';
+                            const errorText = document.createElement('div');
+                            errorText.textContent = '图片加载失败';
+                            errorText.style.color = '#ff6b6b';
+                            errorText.style.padding = '20px';
+                            errorText.style.textAlign = 'center';
+                            mediaContainer.appendChild(errorText);
                         };
                     } else {
                         mediaElement.controls = true;
                         mediaElement.autoplay = true;
                         mediaElement.muted = true;
                         mediaElement.loop = true;
-                        mediaElement.playsInline = true; // 在iOS上内联播放
+                        mediaElement.playsInline = true;
+                        mediaElement.disablePictureInPicture = true;
+                        
+                        // 视频加载错误处理
+                        mediaElement.onerror = function() {
+                            console.error('视频加载失败:', data.filename || '未知文件');
+                            this.style.display = 'none';
+                            const errorText = document.createElement('div');
+                            errorText.textContent = '视频加载失败';
+                            errorText.style.color = '#ff6b6b';
+                            errorText.style.padding = '20px';
+                            errorText.style.textAlign = 'center';
+                            mediaContainer.appendChild(errorText);
+                        };
+                        
                         mediaElement.addEventListener('loadedmetadata', () => {
                             mediaElement.play().catch(e => console.error('Autoplay failed:', e));
                         });
                     }
-
-                    // 创建媒体容器
-                    const mediaContainer = document.createElement('div');
-                    mediaContainer.className = 'media-container';
+                    
+                    // 添加触摸事件支持
+                    let touchStartTime = 0;
+                    mediaElement.addEventListener('touchstart', function(e) {
+                        touchStartTime = Date.now();
+                        // 防止触摸时触发页面滚动
+                        if (e.touches.length === 1) {
+                            e.preventDefault();
+                        }
+                    }, { passive: false });
+                    
+                    mediaElement.addEventListener('touchend', function(e) {
+                        // 短按处理（300ms内）
+                        if (Date.now() - touchStartTime < 300) {
+                            e.preventDefault();
+                            // 如果是视频，点击播放/暂停
+                            if (data.type === 'video') {
+                                if (this.paused) {
+                                    this.play().catch(e => console.error('播放失败:', e));
+                                } else {
+                                    this.pause();
+                                }
+                            }
+                        }
+                    }, { passive: false });
+                    
                     mediaContainer.appendChild(mediaElement);
+                    mediaItem.appendChild(mediaContainer);
                     
-                    // 添加文件名（如果有）
-                    if (data.filename) {
-                        const filenameEl = document.createElement('div');
-                        filenameEl.className = 'media-filename';
-                        filenameEl.textContent = data.filename;
-                        mediaContainer.appendChild(filenameEl);
-                    }
+                    // 添加文件名（始终显示）
+                    const filenameEl = document.createElement('div');
+                    filenameEl.className = 'media-filename';
+                    filenameEl.textContent = data.filename || '未命名文件';
+                    filenameEl.title = data.filename || ''; // 添加title属性，鼠标悬停时显示完整文件名
+                    mediaItem.appendChild(filenameEl);
                     
-                    mediaList.appendChild(mediaContainer);
+                    mediaList.appendChild(mediaItem);
                     
                     // 滚动到新内容
-                    mediaElement.scrollIntoView({ behavior: 'smooth' });
+                    mediaItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 } else {
                     console.error('Media not found:', data.error);
                     const errorElement = document.createElement('div');
@@ -275,18 +399,18 @@
                     errorElement.scrollIntoView({ behavior: 'smooth' });
                 }
             } catch (error) {
-                console.error('Error fetching media:', error);
-                const errorElement = document.createElement('div');
-                errorElement.className = 'media-item';
-                errorElement.style.color = '#fff';
-                errorElement.style.textAlign = 'center';
-                errorElement.textContent = `请求失败: ${error.message}`;
-                mediaList.appendChild(errorElement);
-                errorElement.scrollIntoView({ behavior: 'smooth' });
-            } finally {
-                isLoading = false;
-                loading.classList.remove('active');
-            }
+                    console.error('Error fetching media:', error);
+                    const errorElement = document.createElement('div');
+                    errorElement.className = 'media-item';
+                    errorElement.style.color = '#fff';
+                    errorElement.style.textAlign = 'center';
+                    errorElement.textContent = `请求失败: ${error.message}`;
+                    mediaList.appendChild(errorElement);
+                    errorElement.scrollIntoView({ behavior: 'smooth' });
+                } finally {
+                    isLoading = false;
+                    loading.classList.remove('active');
+                }
         }
 
         // 节流函数，防止频繁触发滚动事件
