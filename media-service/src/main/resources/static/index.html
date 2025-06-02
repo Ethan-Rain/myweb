@@ -56,6 +56,7 @@
             overflow: hidden;
             background-color: #1a1a1a;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            touch-action: pan-y;
         }
 
         .media-container {
@@ -483,6 +484,36 @@
             mediaList.appendChild(errorElement);
         }, true);
 
+        // 触控相关变量
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const SWIPE_THRESHOLD = 50; // 滑动阈值，单位像素
+
+        // 处理触控开始
+        function handleTouchStart(e) {
+            touchStartX = e.touches[0].clientX;
+        }
+
+        // 处理触控结束
+        function handleTouchEnd(e) {
+            touchEndX = e.changedTouches[0].clientX;
+            handleSwipe();
+        }
+
+        // 处理滑动
+        function handleSwipe() {
+            const diff = touchStartX - touchEndX;
+            
+            // 向左滑动，加载下一个
+            if (diff > SWIPE_THRESHOLD) {
+                window.scrollBy(0, window.innerHeight * 0.8);
+            } 
+            // 向右滑动，加载上一个
+            else if (diff < -SWIPE_THRESHOLD) {
+                window.scrollBy(0, -window.innerHeight * 0.8);
+            }
+        }
+
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             // 显示加载提示
@@ -493,8 +524,18 @@
             loadingTip.textContent = '正在加载媒体资源...';
             mediaList.appendChild(loadingTip);
             
+            // 添加触摸事件监听
+            document.addEventListener('touchstart', handleTouchStart, { passive: true });
+            document.addEventListener('touchend', handleTouchEnd, { passive: true });
+            
             // 开始加载媒体
             refreshMedia();
+        });
+        
+        // 页面卸载时移除事件监听
+        window.addEventListener('beforeunload', () => {
+            document.removeEventListener('touchstart', handleTouchStart);
+            document.removeEventListener('touchend', handleTouchEnd);
         });
     </script>
 </body>
