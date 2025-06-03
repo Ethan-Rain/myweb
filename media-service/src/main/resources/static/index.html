@@ -305,14 +305,81 @@
         let currentMediaType = settings.mediaType;
         let isLoading = false;
         
-        // 滑动相关变量
+        // 性能优化相关变量
         let currentIndex = 0;
         let mediaItems = [];
         let isAnimating = false;
+        const MAX_ITEMS = 15; // 最大加载的媒体项数量
+        let itemPool = []; // 媒体项对象池
+        let visibleItems = new Set(); // 当前可见的媒体项索引
+        let scrollDebounceTimer = null;
+        let rafId = null; // 用于管理requestAnimationFrame
+        let lastLoadTime = 0; // 记录上次加载时间
+        let mediaElements = new Map(); // 跟踪所有媒体元素
+        let observer; // IntersectionObserver 实例
         
         // 设置下拉框的选中状态
         categorySelect.value = currentCategory;
         mediaTypeSelect.value = currentMediaType;
+
+        // 清理不可见的媒体项
+        function cleanupInvisibleMedia() {
+            requestAnimationFrame(() => {
+                const viewportHeight = window.innerHeight;
+                const now = Date.now();
+                const buffer = viewportHeight * 2; // 保留上下各两屏的内容
+                
+                mediaElements.forEach((item, id) => {
+                    if (!item || !item.element) {
+                        mediaElements.delete(id);
+                        return;
+                    }
+                    
+                    try {
+                        const rect = item.element.getBoundingClientRect();
+                        const isVisible = 
+                            (rect.top >= -buffer && rect.top <= viewportHeight + buffer) ||
+                            (rect.bottom >= -buffer && rect.bottom <= viewportHeight + buffer);
+                        
+                        // 如果元素不可见且存在时间超过30秒，则清理
+                        if (!isVisible && (now - item.timestamp > 30000)) {
+                            // 清理视频资源
+                            if (item.element.tagName === 'VIDEO') {
+                                // 暂停并清理视频
+                                item.element.pause();
+                                item.element.src = '';
+                                item.element.load();
+                                
+                                // 清理视频观察者
+                                if (item.element._videoObserver) {
+                                    item.element._videoObserver.disconnect();
+                                    delete item.element._videoObserver;
+                                }
+                                
+                                // 移除所有事件监听器
+                                const newVideo = item.element.cloneNode(false);
+                                if (item.element.parentNode) {
+                                    item.element.parentNode.replaceChild(newVideo, item.element);
+                                }
+                            }
+                            
+                            // 从DOM中移除
+                            const parent = item.element.closest ? item.element.closest('.media-item') : null;
+                            if (parent && parent.parentNode) {
+                                parent.parentNode.removeChild(parent);
+                            }
+                            
+                            // 从Map中移除引用
+                            mediaElements.delete(id);
+                        }
+                    } catch (e) {
+                        console.error('清理媒体项时出错:', e);
+                        mediaElements.delete(id);
+                    }
+                });
+            });
+        }
+
 
         // 获取媒体内容
         async function fetchMedia(type) {
@@ -323,142 +390,224 @@
             console.log(`Fetching ${type} for category ${currentCategory}`);
 
             try {
+                // 清理不可见的媒体项
+                cleanupInvisibleMedia();
+                
+                // 如果媒体项数量超过限制，移除最旧的项目
+                if (mediaElements.size >= MAX_ITEMS) {
+                    const oldestItem = Array.from(mediaElements.entries())
+                        .reduce((oldest, current) => 
+                            current[1].timestamp < oldest[1].timestamp ? current : oldest
+                        );
+                    if (oldestItem) {
+                        const parent = oldestItem[1].element.closest('.media-item');
+                        if (parent && parent.parentNode) {
+                            parent.parentNode.removeChild(parent);
+                        }
+                        mediaElements.delete(oldestItem[0]);
+                    }
+                }
+                
+                // 创建媒体项容器
+                const mediaItem = document.createElement('div');
+                mediaItem.className = 'media-item';
+                
+                const mediaContainer = document.createElement('div');
+                mediaContainer.className = 'media-container';
+                
+                // 添加加载占位图
+                const placeholder = document.createElement('div');
+                placeholder.className = 'media-placeholder';
+                mediaContainer.appendChild(placeholder);
+                
+                const mediaElement = document.createElement(type === 'image' ? 'img' : 'video');
+                
                 // 使用正确的API端点
                 const endpoint = type === 'image' ? '/random/image' : '/random/video';
-                const response = await fetch(`${endpoint}?category=${currentCategory}`);
+                const url = `${endpoint}?category=${currentCategory}`;
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // 对于图片，使用 data-src 延迟加载
+                if (type === 'image') {
+                    mediaElement.setAttribute('data-src', url + '&t=' + new Date().getTime());
+                    mediaElement.alt = '随机图片';
+                    mediaElement.loading = 'lazy';
+                    mediaElement.decoding = 'async';
+                    // 初始时不设置 src，等待懒加载
+                    
+                    mediaElement.onload = function() {
+                        this.classList.add('loaded');
+                        if (placeholder) placeholder.style.display = 'none';
+                    };
+                    
+                    mediaElement.onerror = function() {
+                        console.error('图片加载失败:', url);
+                        this.style.display = 'none';
+                        const errorText = document.createElement('div');
+                        errorText.textContent = '图片加载失败';
+                        errorText.style.color = '#ff6b6b';
+                        errorText.style.padding = '20px';
+                        errorText.style.textAlign = 'center';
+                        mediaContainer.appendChild(errorText);
+                    };
+                } else {
+                    // 对于视频，创建视频元素并设置源
+                    mediaElement.controls = true;
+                    mediaElement.autoplay = true;
+                    mediaElement.muted = true;
+                    mediaElement.loop = true;
+                    mediaElement.playsInline = true;
+                    mediaElement.preload = 'metadata';
+                    mediaElement.disablePictureInPicture = true;
+                    
+                    const videoUrl = url + '&t=' + new Date().getTime();
+                    const source = document.createElement('source');
+                    source.src = videoUrl;
+                    source.type = 'video/mp4';
+                    mediaElement.appendChild(source);
+                    
+                    // 视频加载完成处理
+                    mediaElement.onloadeddata = function() {
+                        console.log('视频加载成功:', videoUrl);
+                        this.classList.add('loaded');
+                        if (placeholder) placeholder.style.display = 'none';
+                        
+                        // 添加可见性检测
+                        const videoObserver = new IntersectionObserver((entries) => {
+                            entries.forEach(entry => {
+                                if (entry.isIntersecting) {
+                                    if (entry.target.paused) {
+                                        entry.target.play().catch(e => {
+                                            console.log('视频自动播放失败，尝试静音播放:', e);
+                                            entry.target.muted = true;
+                                            entry.target.play().catch(e => console.log('静音播放也失败:', e));
+                                        });
+                                    }
+                                } else if (!entry.target.paused) {
+                                    entry.target.pause();
+                                }
+                            });
+                        }, { 
+                            root: null,
+                            threshold: 0.1,
+                            rootMargin: '100px 0px 100px 0px' // 上下各100px的预加载区域
+                        });
+                        
+                        videoObserver.observe(mediaElement);
+                        mediaElement._videoObserver = videoObserver; // 保存观察者引用
+                    };
+                    
+                    // 视频加载错误处理
+                    mediaElement.onerror = function() {
+                        console.error('视频加载失败:', videoUrl);
+                        this.style.display = 'none';
+                        if (placeholder) {
+                            placeholder.textContent = '视频加载失败';
+                            placeholder.style.color = '#ff6b6b';
+                            placeholder.style.padding = '20px';
+                            placeholder.style.textAlign = 'center';
+                        }
+                    };
+                    
+                    // 尝试自动播放（带错误处理）
+                    const tryAutoplay = () => {
+                        const playPromise = mediaElement.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => {
+                                console.log('自动播放被阻止，等待用户交互后重试');
+                                // 用户可能需要先与页面交互才能播放
+                                document.addEventListener('click', function onClick() {
+                                    document.removeEventListener('click', onClick);
+                                    mediaElement.muted = true;
+                                    mediaElement.play().catch(e => console.log('用户交互后播放失败:', e));
+                                }, { once: true });
+                            });
+                        }
+                    };
+                    
+                    // 在元数据加载完成后尝试播放
+                    mediaElement.addEventListener('loadedmetadata', tryAutoplay);
                 }
                 
-                const data = await response.json();
-                console.log('Response data:', data);
-
-                if (data.data) {  // 检查返回的 data 字段
-                    const mediaItem = document.createElement('div');
-                    mediaItem.className = 'media-item';
-                    
-                    const mediaContainer = document.createElement('div');
-                    mediaContainer.className = 'media-container';
-                    
-                    // 添加加载占位图
-                    const placeholder = document.createElement('div');
-                    placeholder.className = 'media-placeholder';
-                    mediaContainer.appendChild(placeholder);
-                    
-                    const mediaElement = document.createElement(type === 'image' ? 'img' : 'video');
-                    
-                    // 检查是否有错误
-                    if (data.error) {
-                        throw new Error(data.error);
+                // 添加触摸事件支持
+                let touchStartTime = 0;
+                mediaElement.addEventListener('touchstart', function(e) {
+                    touchStartTime = Date.now();
+                    // 防止触摸时触发页面滚动
+                    if (e.touches.length === 1) {
+                        e.preventDefault();
                     }
-                    
-                    // 设置媒体元素的src为Base64数据
-                    mediaElement.src = data.data;
-                    
-                    if (data.type === 'image') {
-                        mediaElement.alt = data.filename || '随机图片';
-                        mediaElement.loading = 'lazy';
-                        mediaElement.decoding = 'async';
-                        mediaElement.onload = function() {
-                            this.classList.add('loaded');
-                            if (placeholder) placeholder.style.display = 'none';
-                        };
-                        
-                        // 图片加载错误处理
-                        mediaElement.onerror = function() {
-                            console.error('图片加载失败:', data.filename || '未知文件');
-                            this.style.display = 'none';
-                            const errorText = document.createElement('div');
-                            errorText.textContent = '图片加载失败';
-                            errorText.style.color = '#ff6b6b';
-                            errorText.style.padding = '20px';
-                            errorText.style.textAlign = 'center';
-                            mediaContainer.appendChild(errorText);
-                        };
-                    } else {
-                        mediaElement.controls = true;
-                        mediaElement.onloadeddata = function() {
-                            this.classList.add('loaded');
-                            if (placeholder) placeholder.style.display = 'none';
-                        };
-                        mediaElement.autoplay = true;
-                        mediaElement.muted = true;
-                        mediaElement.loop = true;
-                        mediaElement.playsInline = true;
-                        mediaElement.disablePictureInPicture = true;
-                        
-                        // 视频加载错误处理
-                        mediaElement.onerror = function() {
-                            console.error('视频加载失败:', data.filename || '未知文件');
-                            this.style.display = 'none';
-                            const errorText = document.createElement('div');
-                            errorText.textContent = '视频加载失败';
-                            errorText.style.color = '#ff6b6b';
-                            errorText.style.padding = '20px';
-                            errorText.style.textAlign = 'center';
-                            mediaContainer.appendChild(errorText);
-                        };
-                        
-                        mediaElement.addEventListener('loadedmetadata', () => {
-                            mediaElement.play().catch(e => console.error('Autoplay failed:', e));
-                        });
-                    }
-                    
-                    // 添加触摸事件支持
-                    let touchStartTime = 0;
-                    mediaElement.addEventListener('touchstart', function(e) {
-                        touchStartTime = Date.now();
-                        // 防止触摸时触发页面滚动
-                        if (e.touches.length === 1) {
-                            e.preventDefault();
-                        }
-                    }, { passive: false });
-                    
-                    mediaElement.addEventListener('touchend', function(e) {
-                        // 短按处理（300ms内）
-                        if (Date.now() - touchStartTime < 300) {
-                            e.preventDefault();
-                            // 如果是视频，点击播放/暂停
-                            if (data.type === 'video') {
-                                if (this.paused) {
-                                    this.play().catch(e => console.error('播放失败:', e));
-                                } else {
-                                    this.pause();
-                                }
+                }, { passive: false });
+                
+                mediaElement.addEventListener('touchend', function(e) {
+                    // 短按处理（300ms内）
+                    if (Date.now() - touchStartTime < 300) {
+                        e.preventDefault();
+                        // 如果是视频，点击播放/暂停
+                        if (type === 'video') {
+                            if (this.paused) {
+                                this.play().catch(e => console.error('播放失败:', e));
+                            } else {
+                                this.pause();
                             }
                         }
-                    }, { passive: false });
+                    }
+                }, { passive: false });
+                
+                // 将媒体元素插入到占位图之前
+                mediaContainer.insertBefore(mediaElement, placeholder);
+                
+                // 生成唯一ID并存储媒体元素
+                const mediaId = 'media-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                mediaElements.set(mediaId, {
+                    element: mediaElement,
+                    type: type,
+                    timestamp: Date.now()
+                });
+                
+                // 如果是图片，添加到懒加载观察者
+                if (type === 'image') {
+                    if (window.lazyLoadNewImages) {
+                        setTimeout(() => window.lazyLoadNewImages(), 0);
+                    }
+                } else if (type === 'video') {
+                    // 为视频添加可见性检查
+                    const videoObserver = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                if (entry.target.paused) {
+                                    entry.target.play().catch(e => console.log('视频自动播放失败:', e));
+                                }
+                            } else {
+                                if (!entry.target.paused) {
+                                    entry.target.pause();
+                                }
+                            }
+                        });
+                    }, { threshold: 0.1 });
                     
-                    // 将媒体元素插入到占位图之前
-                    mediaContainer.insertBefore(mediaElement, placeholder);
-                    mediaItem.appendChild(mediaContainer);
-                    
-                    // 添加文件名（始终显示）
-                    const filenameEl = document.createElement('div');
-                    filenameEl.className = 'media-filename';
-                    filenameEl.textContent = data.filename || '未命名文件';
-                    filenameEl.title = data.filename || ''; // 添加title属性，鼠标悬停时显示完整文件名
-                    mediaItem.appendChild(filenameEl);
-                    
-                    mediaList.appendChild(mediaItem);
-                    
-                    // 滚动到新内容，使其在视口中居中
-                    mediaItem.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                        inline: 'center'
-                    });
-                } else {
-                    console.error('Media not found:', data.error);
-                    const errorElement = document.createElement('div');
-                    errorElement.className = 'media-item';
-                    errorElement.style.color = '#fff';
-                    errorElement.style.textAlign = 'center';
-                    errorElement.textContent = `没有找到${type}资源: ${data.error || '未知错误'}`;
-                    mediaList.appendChild(errorElement);
-                    errorElement.scrollIntoView({ behavior: 'smooth' });
+                    videoObserver.observe(mediaElement);
                 }
+                
+                mediaItem.appendChild(mediaContainer);
+                
+                // 添加文件名
+                const filenameEl = document.createElement('div');
+                filenameEl.className = 'media-filename';
+                // 从URL中提取文件名
+                const filename = url.split('/').pop().split('?')[0] || '未命名文件';
+                filenameEl.textContent = filename;
+                filenameEl.title = filename;
+                mediaItem.appendChild(filenameEl);
+                
+                mediaList.appendChild(mediaItem);
+                
+                // 滚动到新内容，使其在视口中居中
+                mediaItem.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'center'
+                });
+                
             } catch (error) {
                     console.error('Error fetching media:', error);
                     const errorElement = document.createElement('div');
@@ -496,58 +645,218 @@
             return currentMediaType;
         }
 
-        // 图片懒加载功能
-        const lazyLoadImages = () => {
-            const lazyImages = document.querySelectorAll('img[loading="lazy"]:not(.loaded)');
-            lazyImages.forEach(img => {
-                const rect = img.getBoundingClientRect();
-                // 当图片进入视口时加载
-                if (rect.top < window.innerHeight + 100 && rect.bottom > -100) {
-                    const src = img.getAttribute('src');
-                    if (src) {
-                        // 如果图片已经在加载中，则跳过
-                        if (img.getAttribute('data-loading') === 'true') return;
+        // 初始化懒加载
+        function initLazyLoad() {
+            // 如果已存在观察者，先断开连接
+            if (window.lazyLoadObserver) {
+                window.lazyLoadObserver.disconnect();
+            }
+            
+            // 创建新的 IntersectionObserver 实例
+            window.lazyLoadObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        const src = img.getAttribute('data-src');
                         
-                        img.setAttribute('data-loading', 'true');
-                        const tempImg = new Image();
-                        tempImg.onload = () => {
-                            img.classList.add('loaded');
-                            const placeholder = img.previousElementSibling;
-                            if (placeholder && placeholder.classList.contains('media-placeholder')) {
-                                placeholder.style.display = 'none';
-                            }
-                        };
-                        tempImg.onerror = () => {
-                            console.error('图片加载失败:', img.alt || '未知图片');
-                            const placeholder = img.previousElementSibling;
-                            if (placeholder && placeholder.classList.contains('media-placeholder')) {
-                                placeholder.textContent = '加载失败';
-                                placeholder.style.color = '#ff6b6b';
-                            }
-                        };
-                        tempImg.src = src;
+                        if (src && img.getAttribute('data-loading') !== 'true') {
+                            img.setAttribute('data-loading', 'true');
+                            
+                            // 创建新的 Image 对象来预加载图片
+                            const tempImg = new Image();
+                            tempImg.onload = () => {
+                                // 当图片加载完成后，设置实际图片的 src
+                                img.src = src;
+                                img.classList.add('loaded');
+                                
+                                // 隐藏占位图
+                                const placeholder = img.previousElementSibling;
+                                if (placeholder && placeholder.classList.contains('media-placeholder')) {
+                                    placeholder.style.display = 'none';
+                                }
+                                
+                                // 停止观察已加载的图片
+                                observer.unobserve(img);
+                            };
+                            
+                            tempImg.onerror = () => {
+                                console.error('图片加载失败:', img.alt || '未知图片');
+                                const placeholder = img.previousElementSibling;
+                                if (placeholder && placeholder.classList.contains('media-placeholder')) {
+                                    placeholder.textContent = '加载失败';
+                                    placeholder.style.color = '#ff6b6b';
+                                }
+                            };
+                            
+                            // 开始加载图片
+                            tempImg.src = src;
+                        }
                     }
-                }
+                });
+            }, {
+                root: null,
+                rootMargin: '300px 0px', // 提前300px加载
+                threshold: 0.01
             });
+            
+            // 观察所有懒加载图片
+            document.querySelectorAll('img[data-src]:not([data-loading="true"])').forEach(img => {
+                window.lazyLoadObserver.observe(img);
+            });
+        }
+        
+        // 全局函数，用于在添加新内容后调用
+        window.lazyLoadNewImages = () => {
+            initLazyLoad();
         };
         
-        // 初始加载可视区域图片
-        lazyLoadImages();
+        // 优化滚动处理
+        let lastScrollTime = 0;
+        let lastScrollTop = 0;
+        let lastScrollDirection = 0; // 1 for down, -1 for up
+        const SCROLL_DEBOUNCE_DELAY = 200; // 增加防抖延迟到200ms
+        const SCROLL_THRESHOLD = 100; // 滚动距离阈值，避免微小滚动触发
         
-        // 监听滚动事件（添加节流）
-        window.addEventListener('scroll', throttle(() => {
-            // 懒加载图片
-            lazyLoadImages();
+        function handleScroll() {
+            const now = Date.now();
+            const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
             
-            // 触底加载更多
-            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-            const isBottom = Math.abs(scrollTop + clientHeight - scrollHeight) < 500; // 提前500px加载
+            // 计算滚动方向
+            const scrollDirection = currentScrollTop > lastScrollTop ? 1 : -1;
             
-            if (isBottom && !isLoading) {
-                const mediaType = getMediaType();
-                fetchMedia(mediaType);
+            // 重置方向变化时的计时器
+            if (scrollDirection !== lastScrollDirection) {
+                lastScrollTime = now;
+                lastScrollDirection = scrollDirection;
+                return;
             }
-        }, 200));
+            
+            // 更新最后滚动位置
+            lastScrollTop = currentScrollTop;
+            
+            // 使用防抖减少处理频率
+            if (now - lastScrollTime < SCROLL_DEBOUNCE_DELAY) {
+                if (scrollDebounceTimer) {
+                    clearTimeout(scrollDebounceTimer);
+                }
+                scrollDebounceTimer = setTimeout(handleScrollImpl, SCROLL_DEBOUNCE_DELAY);
+                return;
+            }
+            
+            lastScrollTime = now;
+            
+            // 取消未执行的动画帧
+            if (rafId) {
+                cancelAnimationFrame(rafId);
+            }
+            
+            // 使用 requestAnimationFrame 确保在下一帧执行
+            rafId = requestAnimationFrame(handleScrollImpl);
+        }
+        
+        function handleScrollImpl() {
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+            const scrollPosition = scrollTop + clientHeight;
+            const distanceToBottom = scrollHeight - scrollPosition;
+            const isBottom = distanceToBottom < 1000; // 距离底部1000px时加载
+            
+            // 只有当滚动到底部附近时才触发加载
+            if (isBottom && !isLoading) {
+                // 防止连续快速触发
+                const now = Date.now();
+                if (now - lastLoadTime < 1000) { // 1秒内不重复加载
+                    return;
+                }
+                lastLoadTime = now;
+                
+                console.log('触发加载更多...', { scrollTop, scrollHeight, clientHeight, distanceToBottom });
+                
+                const mediaType = getMediaType();
+                fetchMedia(mediaType).catch(e => {
+                    console.error('加载媒体内容失败:', e);
+                    // 显示错误提示
+                    const errorElement = document.createElement('div');
+                    errorElement.className = 'error-message';
+                    errorElement.textContent = '加载失败，请稍后重试';
+                    mediaList.appendChild(errorElement);
+                    setTimeout(() => errorElement.remove(), 3000);
+                });
+            }
+            
+            // 更新可见项状态
+            updateVisibleItems();
+            
+            // 初始化懒加载
+            if (window.lazyLoadNewImages) {
+                window.lazyLoadNewImages();
+            }
+        }
+        
+        // 更新可见项状态
+        function updateVisibleItems() {
+            const viewportHeight = window.innerHeight;
+            const buffer = viewportHeight * 0.5; // 可见区域缓冲区
+            
+            // 使用 for...of 替代 forEach 提高性能
+            for (const [id, item] of mediaElements.entries()) {
+                if (!item || !item.element || item.element.tagName !== 'VIDEO') continue;
+                
+                try {
+                    const rect = item.element.getBoundingClientRect();
+                    const isInView = rect.bottom > -buffer && rect.top < (viewportHeight + buffer);
+                    
+                    if (isInView) {
+                        // 如果视频在可见区域内且已加载元数据但未播放，则尝试播放
+                        if (item.element.readyState > 2 && item.element.paused) {
+                            const playPromise = item.element.play();
+                            if (playPromise !== undefined) {
+                                playPromise.catch(e => {
+                                    console.log('视频自动播放失败，尝试静音播放:', e);
+                                    item.element.muted = true;
+                                    item.element.play().catch(() => {});
+                                });
+                            }
+                        }
+                    } else if (!item.element.paused) {
+                        // 如果视频不可见且正在播放，则暂停
+                        item.element.pause();
+                    }
+                } catch (e) {
+                    console.error('更新视频可见性时出错:', e);
+                }
+            }
+        }
+        
+        // 使用 passive 事件监听器提高滚动性能
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        
+        // 在页面卸载时清理事件监听器和定时器
+        window.addEventListener('beforeunload', () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (rafId) cancelAnimationFrame(rafId);
+            if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer);
+        });
+        
+        // 初始加载
+        document.addEventListener('DOMContentLoaded', () => {
+            // 显示加载提示
+            const loadingTip = document.createElement('div');
+            loadingTip.className = 'loading-tip';
+            loadingTip.textContent = '正在加载...';
+            document.body.appendChild(loadingTip);
+            
+            // 初始加载媒体内容
+            const mediaType = getMediaType();
+            fetchMedia(mediaType).finally(() => {
+                if (loadingTip.parentNode) {
+                    loadingTip.remove();
+                }
+            });
+            
+            // 添加触摸事件监听
+            document.addEventListener('touchstart', handleTouchStart, { passive: true });
+            document.addEventListener('touchend', handleTouchEnd, { passive: true });
+        });
 
         // 刷新当前媒体内容
         const refreshMedia = () => {
@@ -650,18 +959,54 @@
             loadingTip.textContent = '正在加载媒体资源...';
             mediaList.appendChild(loadingTip);
             
-            // 添加触摸事件监听
+            // 添加触摸事件监听（使用 passive 提高性能）
             document.addEventListener('touchstart', handleTouchStart, { passive: true });
             document.addEventListener('touchend', handleTouchEnd, { passive: true });
             
+            // 初始化 IntersectionObserver 用于懒加载
+            initLazyLoad();
+            
             // 开始加载媒体
             refreshMedia();
+            
+            // 添加性能监控（仅开发环境）
+            if (window.performance) {
+                const perfObserver = new PerformanceObserver((list) => {
+                    for (const entry of list.getEntries()) {
+                        if (entry.entryType === 'longtask') {
+                            console.warn('长任务执行:', entry);
+                        }
+                    }
+                });
+                perfObserver.observe({ entryTypes: ['longtask'] });
+            }
         });
         
-        // 页面卸载时移除事件监听
+        // 页面卸载时清理资源
         window.addEventListener('beforeunload', () => {
+            // 移除事件监听
             document.removeEventListener('touchstart', handleTouchStart);
             document.removeEventListener('touchend', handleTouchEnd);
+            window.removeEventListener('scroll', handleScroll);
+            
+            // 清理所有媒体资源
+            mediaElements.forEach(item => {
+                if (item.element.tagName === 'VIDEO') {
+                    item.element.pause();
+                    item.element.src = '';
+                    item.element.load();
+                }
+            });
+            
+            // 断开观察者
+            if (window.lazyLoadObserver) {
+                window.lazyLoadObserver.disconnect();
+            }
+            
+            // 取消动画帧
+            if (scrollDebounceTimer) {
+                cancelAnimationFrame(scrollDebounceTimer);
+            }
         });
     </script>
 </body>

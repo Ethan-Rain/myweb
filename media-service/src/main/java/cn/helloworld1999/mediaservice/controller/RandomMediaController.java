@@ -7,9 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.util.StreamUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,10 +57,9 @@ public class RandomMediaController {
     }
 
     @GetMapping("/image")
-    public ResponseEntity<Map<String, Object>> getRandomImage(
+    public ResponseEntity<?> getRandomImage(
             @RequestParam(value = "category", required = false, defaultValue = "1") Long category) {
         
-        Map<String, Object> result = new HashMap<>();
         logger.info("开始处理获取随机图片请求，分类ID: {}", category);
         
         try {
@@ -70,8 +71,7 @@ public class RandomMediaController {
             if (randomImages == null || randomImages.isEmpty()) {
                 String errorMsg = "未找到图片，分类ID: " + category;
                 logger.warn(errorMsg);
-                result.put("error", errorMsg);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.singletonMap("error", errorMsg));
             }
             
             // 获取随机图片路径
@@ -81,8 +81,8 @@ public class RandomMediaController {
             if (fileConfig == null) {
                 String errorMsg = "FileConfig 未注入";
                 logger.error(errorMsg);
-                result.put("error", errorMsg);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Collections.singletonMap("error", errorMsg));
             }
             
             // 构建完整文件路径
@@ -100,13 +100,8 @@ public class RandomMediaController {
             
             // 检查文件是否存在
             File imageFile = new File(fullPath);
-            boolean fileExists = imageFile.exists();
-            boolean isFile = imageFile.isFile();
-            boolean canRead = imageFile.canRead();
             
-            logger.info("文件存在: {}, 是文件: {}, 可读: {}", fileExists, isFile, canRead);
-            
-            if (!fileExists) {
+            if (!imageFile.exists()) {
                 // 尝试直接使用路径（不拼接baseDir）
                 File altFile = new File(imagePath);
                 if (altFile.exists()) {
@@ -116,48 +111,48 @@ public class RandomMediaController {
                     String errorMsg = String.format("图片文件不存在: %s (当前工作目录: %s)", 
                         fullPath, System.getProperty("user.dir"));
                     logger.error(errorMsg);
-                    result.put("error", errorMsg);
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Collections.singletonMap("error", errorMsg));
                 }
             }
             
             if (!imageFile.canRead()) {
                 String errorMsg = String.format("图片文件不可读，请检查权限: %s", imageFile.getAbsolutePath());
                 logger.error(errorMsg);
-                result.put("error", errorMsg);
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Collections.singletonMap("error", errorMsg));
             }
             
-            // 读取文件内容
-            logger.info("正在读取图片文件内容...");
-            byte[] fileContent = Files.readAllBytes(imageFile.toPath());
-            String base64Image = Base64.getEncoder().encodeToString(fileContent);
-            
-            // 获取MIME类型
+            // 使用Resource接口进行流式传输
+            Resource resource = new FileSystemResource(imageFile);
             String mimeType = getMimeType(imageFile.getName());
             logger.info("检测到MIME类型: {}", mimeType);
             
-            // 构建响应
-            result.put("type", "image");
-            result.put("data", "data:" + mimeType + ";base64," + base64Image);
-            result.put("filename", imageFile.getName());
-            logger.info("成功处理图片文件，大小: {} 字节", fileContent.length);
+            // 构建响应头
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(mimeType));
+            headers.setContentLength(imageFile.length());
+            headers.setContentDisposition(ContentDisposition.builder("inline")
+                    .filename(imageFile.getName(), java.nio.charset.StandardCharsets.UTF_8)
+                    .build());
             
-            return ResponseEntity.ok(result);
+            logger.info("准备流式传输图片文件，大小: {} 字节", imageFile.length());
+            
+            // 返回流式响应
+            return new ResponseEntity<>(resource, headers, HttpStatus.OK);
             
         } catch (Exception e) {
             String errorMsg = "获取随机图片失败: " + e.getMessage();
             logger.error(errorMsg, e);
-            result.put("error", errorMsg);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", errorMsg));
         }
     }
 
     @GetMapping("/video")
-    public ResponseEntity<Map<String, Object>> getRandomVideo(
+    public ResponseEntity<?> getRandomVideo(
             @RequestParam(value = "category", required = false, defaultValue = "1") Long category) {
         
-        Map<String, Object> result = new HashMap<>();
         logger.info("开始处理获取随机视频请求，分类ID: {}", category);
         
         try {
@@ -169,8 +164,8 @@ public class RandomMediaController {
             if (randomVideos == null || randomVideos.isEmpty()) {
                 String errorMsg = "未找到视频，分类ID: " + category;
                 logger.warn(errorMsg);
-                result.put("error", errorMsg);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Collections.singletonMap("error", errorMsg));
             }
             
             // 获取随机视频路径
@@ -180,8 +175,8 @@ public class RandomMediaController {
             if (fileConfig == null) {
                 String errorMsg = "FileConfig 未注入";
                 logger.error(errorMsg);
-                result.put("error", errorMsg);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(Collections.singletonMap("error", errorMsg));
             }
             
             // 构建完整文件路径
@@ -199,13 +194,8 @@ public class RandomMediaController {
             
             // 检查文件是否存在
             File videoFile = new File(fullPath);
-            boolean fileExists = videoFile.exists();
-            boolean isFile = videoFile.isFile();
-            boolean canRead = videoFile.canRead();
             
-            logger.info("文件存在: {}, 是文件: {}, 可读: {}", fileExists, isFile, canRead);
-            
-            if (!fileExists) {
+            if (!videoFile.exists()) {
                 // 尝试直接使用路径（不拼接baseDir）
                 File altFile = new File(videoPath);
                 if (altFile.exists()) {
@@ -215,40 +205,44 @@ public class RandomMediaController {
                     String errorMsg = String.format("视频文件不存在: %s (当前工作目录: %s)", 
                         fullPath, System.getProperty("user.dir"));
                     logger.error(errorMsg);
-                    result.put("error", errorMsg);
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body(Collections.singletonMap("error", errorMsg));
                 }
             }
             
             if (!videoFile.canRead()) {
                 String errorMsg = String.format("视频文件不可读，请检查权限: %s", videoFile.getAbsolutePath());
                 logger.error(errorMsg);
-                result.put("error", errorMsg);
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(result);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Collections.singletonMap("error", errorMsg));
             }
             
-            // 读取文件内容
-            logger.info("正在读取视频文件内容...");
-            byte[] fileContent = Files.readAllBytes(videoFile.toPath());
-            String base64Video = Base64.getEncoder().encodeToString(fileContent);
-            
-            // 获取MIME类型
+            // 使用Resource接口进行流式传输
+            Resource resource = new FileSystemResource(videoFile);
             String mimeType = getMimeType(videoFile.getName());
             logger.info("检测到MIME类型: {}", mimeType);
             
-            // 构建响应
-            result.put("type", "video");
-            result.put("data", "data:" + mimeType + ";base64," + base64Video);
-            result.put("filename", videoFile.getName());
-            logger.info("成功处理视频文件，大小: {} 字节", fileContent.length);
+            // 构建响应头，支持视频范围请求（用于视频播放器）
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(mimeType));
+            headers.setContentLength(videoFile.length());
+            headers.setContentDisposition(ContentDisposition.builder("inline")
+                    .filename(videoFile.getName(), java.nio.charset.StandardCharsets.UTF_8)
+                    .build());
             
-            return ResponseEntity.ok(result);
+            // 支持范围请求（Range requests）
+            headers.set(HttpHeaders.ACCEPT_RANGES, "bytes");
+            
+            logger.info("准备流式传输视频文件，大小: {} 字节", videoFile.length());
+            
+            // 返回流式响应
+            return new ResponseEntity<>(resource, headers, HttpStatus.OK);
             
         } catch (Exception e) {
             String errorMsg = "获取随机视频失败: " + e.getMessage();
             logger.error(errorMsg, e);
-            result.put("error", errorMsg);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", errorMsg));
         }
     }
 

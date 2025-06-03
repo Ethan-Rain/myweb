@@ -79,7 +79,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>cn.helloworld1999.gateway.MediaServiceApplication</mainClass>
+                    <mainClass>cn.helloworld1999.mediaservice.MediaServiceApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>
