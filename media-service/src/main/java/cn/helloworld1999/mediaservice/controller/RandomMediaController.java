@@ -1,23 +1,23 @@
 package cn.helloworld1999.mediaservice.controller;
 
-import cn.helloworld1999.mediaservice.service.MediaService;
 import cn.helloworld1999.mediaservice.config.FileConfig;
+import cn.helloworld1999.mediaservice.service.MediaService;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.util.StreamUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.Collections;
+import java.util.List;
 
 @RestController
 @RequestMapping("/random")
@@ -56,98 +56,109 @@ public class RandomMediaController {
         }
     }
 
+    /**
+     * 获取指定分类下的随机图片文件流
+     *
+     * @param category 图片分类ID（可选参数，默认值为1）
+     * @return ResponseEntity 包含以下可能响应：
+     *         - 200 OK 携带图片资源流
+     *         - 404 NOT_FOUND 当未找到图片或文件不存在
+     *         - 403 FORBIDDEN 当文件不可读
+     *         - 500 INTERNAL_SERVER_ERROR 配置错误或处理异常
+     */
     @GetMapping("/image")
     public ResponseEntity<?> getRandomImage(
             @RequestParam(value = "category", required = false, defaultValue = "1") Long category) {
-        
+
         logger.info("开始处理获取随机图片请求，分类ID: {}", category);
-        
+
         try {
-            // 获取随机图片
+            // 从服务层获取随机图片列表
             logger.info("正在从服务层获取随机图片...");
             List<String> randomImages = mediaService.getRandomImages(category);
             logger.info("从服务层获取到随机图片列表: {}", randomImages);
-            
+
+            // 处理空结果集情况
             if (randomImages == null || randomImages.isEmpty()) {
                 String errorMsg = "未找到图片，分类ID: " + category;
                 logger.warn(errorMsg);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.singletonMap("error", errorMsg));
             }
-            
-            // 获取随机图片路径
+
+            // 获取首个随机图片路径
             String imagePath = randomImages.get(0);
             logger.info("获取到随机图片路径: {}", imagePath);
-            
+
+            // 检查文件配置注入状态
             if (fileConfig == null) {
                 String errorMsg = "FileConfig 未注入";
                 logger.error(errorMsg);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(Collections.singletonMap("error", errorMsg));
             }
-            
-            // 构建完整文件路径
+
+            // 构建规范化文件路径
             String baseDir = fileConfig.getBaseDir();
-            // 处理路径分隔符问题
             String normalizedImagePath = imagePath.replace("\\", "/");
             if (normalizedImagePath.startsWith("/")) {
                 normalizedImagePath = normalizedImagePath.substring(1);
             }
             String fullPath = baseDir + "/" + normalizedImagePath;
-            
+
             logger.info("基础目录: {}", baseDir);
             logger.info("处理后的相对路径: {}", normalizedImagePath);
             logger.info("完整文件路径: {}", fullPath);
-            
-            // 检查文件是否存在
+
+            // 双路径检查策略：优先完整路径，其次尝试相对路径
             File imageFile = new File(fullPath);
-            
             if (!imageFile.exists()) {
-                // 尝试直接使用路径（不拼接baseDir）
                 File altFile = new File(imagePath);
                 if (altFile.exists()) {
                     imageFile = altFile;
                     logger.info("使用相对路径找到文件: {}", imagePath);
                 } else {
-                    String errorMsg = String.format("图片文件不存在: %s (当前工作目录: %s)", 
+                    String errorMsg = String.format("图片文件不存在: %s (当前工作目录: %s)",
                         fullPath, System.getProperty("user.dir"));
                     logger.error(errorMsg);
                     return ResponseEntity.status(HttpStatus.NOT_FOUND)
                             .body(Collections.singletonMap("error", errorMsg));
                 }
             }
-            
+
+            // 文件权限校验
             if (!imageFile.canRead()) {
                 String errorMsg = String.format("图片文件不可读，请检查权限: %s", imageFile.getAbsolutePath());
                 logger.error(errorMsg);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Collections.singletonMap("error", errorMsg));
             }
-            
-            // 使用Resource接口进行流式传输
+
+            // 构建流式响应资源
             Resource resource = new FileSystemResource(imageFile);
             String mimeType = getMimeType(imageFile.getName());
             logger.info("检测到MIME类型: {}", mimeType);
-            
-            // 构建响应头
+
+            // 设置响应头信息
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType(mimeType));
             headers.setContentLength(imageFile.length());
             headers.setContentDisposition(ContentDisposition.builder("inline")
                     .filename(imageFile.getName(), java.nio.charset.StandardCharsets.UTF_8)
                     .build());
-            
+
             logger.info("准备流式传输图片文件，大小: {} 字节", imageFile.length());
-            
-            // 返回流式响应
+
             return new ResponseEntity<>(resource, headers, HttpStatus.OK);
-            
+
         } catch (Exception e) {
+            // 统一异常处理
             String errorMsg = "获取随机图片失败: " + e.getMessage();
             logger.error(errorMsg, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Collections.singletonMap("error", errorMsg));
         }
     }
+
 
     @GetMapping("/video")
     public ResponseEntity<?> getRandomVideo(

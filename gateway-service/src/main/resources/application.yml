@@ -37,14 +37,15 @@ spring:
           predicates:
             - Path=/api/media/**
           filters:
-            - RewritePath=/api/media/(?<segment>.*), /random/$\{segment}
+            #- RewritePath=/api/media/(?<segment>.*), /random/$\{segment}
+            - StripPrefix=2
 
         - id: security-service
           uri: lb://security
           predicates:
             - Path=/api/security/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=2
     nacos:
       discovery:
         enabled: true
