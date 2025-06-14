@@ -1,9 +1,10 @@
-package cn.helloworld1999.mediaservice.service;
+package cn.helloworld1999.mediaservice.service.impl;
 
 import cn.helloworld1999.mediaservice.entity.Media;
 import cn.helloworld1999.mediaservice.entity.MediaContent;
 import cn.helloworld1999.mediaservice.mapper.MediaContentMapper;
 import cn.helloworld1999.mediaservice.mapper.MediaMapper;
+import cn.helloworld1999.mediaservice.service.IMediaService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.slf4j.Logger;

@@ -1,7 +1,7 @@
 package cn.helloworld1999.mediaservice.controller;
 
 import cn.helloworld1999.mediaservice.config.FileConfig;
-import cn.helloworld1999.mediaservice.service.MediaService;
+import cn.helloworld1999.mediaservice.service.impl.MediaService;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,6 +116,7 @@ public class RandomMediaController {
                 if (altFile.exists()) {
                     imageFile = altFile;
                     logger.info("使用相对路径找到文件: {}", imagePath);
+                    logger.info("文件名称: {}", imageFile.getName());
                 } else {
                     String errorMsg = String.format("图片文件不存在: %s (当前工作目录: %s)",
                         fullPath, System.getProperty("user.dir"));

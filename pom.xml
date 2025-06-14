@@ -77,6 +77,12 @@
             <artifactId>hutool-all</artifactId>
             <version>${cn.hutool.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.xuxueli</groupId>
+            <artifactId>xxl-job-core</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+
 
     </dependencies>
 
@@ -150,6 +156,12 @@
                 <artifactId>hutool-all</artifactId>
                 <version>${cn.hutool.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.xuxueli</groupId>
+                <artifactId>xxl-job-core</artifactId>
+                <version>2.2.0</version>
+            </dependency>
+
 
         </dependencies>
     </dependencyManagement>
