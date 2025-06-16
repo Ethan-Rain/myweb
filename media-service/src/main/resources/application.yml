@@ -75,3 +75,12 @@ logging:
   level:
     org.springframework.cloud.gateway: debug
     reactor.netty: debug
+xxl:
+  job:
+    #access-token: default_token  # 调度中心的访问令牌，用于身份验证
+    admin:
+      addresses: http://192.168.31.106:18080/xxl-job-admin  # 调度中心的地址
+    executor:
+      app-name: media-service  # 执行器的名称，用于在调度中心识别
+      ip: 192.168.31.107  # 执行器的IP地址，如果在集群环境下，可以配置为实际的IP
+      port: 28082  # 执行器的端口，用于接收调度中心的指令

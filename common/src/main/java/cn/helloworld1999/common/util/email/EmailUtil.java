@@ -1,4 +1,4 @@
-package cn.helloworld1999.common.util;
+package cn.helloworld1999.common.util.email;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
