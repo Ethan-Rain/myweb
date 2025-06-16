@@ -151,18 +151,18 @@
                 <artifactId>gson</artifactId>
                 <version>2.10.1</version>
             </dependency>
+            <!-- Hutool工具包 -->
             <dependency>
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-all</artifactId>
                 <version>${cn.hutool.version}</version>
             </dependency>
+            <!-- XxlJob依赖 -->
             <dependency>
                 <groupId>com.xuxueli</groupId>
                 <artifactId>xxl-job-core</artifactId>
                 <version>2.2.0</version>
             </dependency>
-
-
         </dependencies>
     </dependencyManagement>
 
