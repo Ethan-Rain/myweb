@@ -5,12 +5,13 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.util.Base64;
+import java.util.Map;
 
 public class RsaKeyGenerator {
 
-    public static void main(String[] args) throws Exception {
+    public static Map<String, Object> generateRsaKey(int keySize) throws Exception {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", BouncyCastleProvider.PROVIDER_NAME);
-        generator.initialize(2048); // 2048位更安全
+        generator.initialize(Math.max(keySize, 2048)); // 2048位更安全
         KeyPair keyPair = generator.generateKeyPair();
 
         String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
@@ -18,5 +19,7 @@ public class RsaKeyGenerator {
 
         System.out.println("🔑 公钥：\n" + publicKey);
         System.out.println("🔐 私钥：\n" + privateKey);
+
+        return Map.of("publicKey", publicKey, "privateKey", privateKey);
     }
 }

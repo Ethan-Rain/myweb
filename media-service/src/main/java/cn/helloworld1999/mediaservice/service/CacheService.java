@@ -9,4 +9,8 @@ public interface CacheService {
      * 同步缓存到Redis
      */
     Map<String, Object> syncToRedis();
+    /**
+     * 同步缓存到Caffeine
+     */
+    Map<String, Object> syncToCaffeineCache ();
 }

@@ -10,10 +10,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.util.Collections;
@@ -162,8 +159,9 @@ public class RandomMediaController {
 
 
     @GetMapping("/video")
-    public ResponseEntity<?> getRandomVideo(
-            @RequestParam(value = "category", required = false, defaultValue = "1") Long category) {
+    public ResponseEntity<byte[]> getRandomVideo(
+            @RequestParam(value = "category", required = false, defaultValue = "1") Long category,
+            @RequestHeader(value = "Range", required = false) String rangeHeader) {
         
         logger.info("开始处理获取随机视频请求，分类ID: {}", category);
         
@@ -177,7 +175,7 @@ public class RandomMediaController {
                 String errorMsg = "未找到视频，分类ID: " + category;
                 logger.warn(errorMsg);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Collections.singletonMap("error", errorMsg));
+                        .body(Collections.singletonMap("error", errorMsg).toString().getBytes());
             }
             
             // 获取随机视频路径
@@ -188,7 +186,7 @@ public class RandomMediaController {
                 String errorMsg = "FileConfig 未注入";
                 logger.error(errorMsg);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(Collections.singletonMap("error", errorMsg));
+                        .body(Collections.singletonMap("error", errorMsg).toString().getBytes());
             }
             
             // 构建完整文件路径
@@ -218,7 +216,7 @@ public class RandomMediaController {
                         fullPath, System.getProperty("user.dir"));
                     logger.error(errorMsg);
                     return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                            .body(Collections.singletonMap("error", errorMsg));
+                            .body(Collections.singletonMap("error", errorMsg).toString().getBytes());
                 }
             }
             
@@ -226,18 +224,21 @@ public class RandomMediaController {
                 String errorMsg = String.format("视频文件不可读，请检查权限: %s", videoFile.getAbsolutePath());
                 logger.error(errorMsg);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Collections.singletonMap("error", errorMsg));
+                        .body(Collections.singletonMap("error", errorMsg).toString().getBytes());
             }
             
-            // 使用Resource接口进行流式传输
-            Resource resource = new FileSystemResource(videoFile);
+            long fileLength = videoFile.length();
+            byte[] buffer = new byte[(int) fileLength];
+            try (java.io.FileInputStream fis = new java.io.FileInputStream(videoFile)) {
+                fis.read(buffer);
+            }
+            
             String mimeType = getMimeType(videoFile.getName());
             logger.info("检测到MIME类型: {}", mimeType);
             
-            // 构建响应头，支持视频范围请求（用于视频播放器）
+            // 构建响应头
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType(mimeType));
-            headers.setContentLength(videoFile.length());
             headers.setContentDisposition(ContentDisposition.builder("inline")
                     .filename(videoFile.getName(), java.nio.charset.StandardCharsets.UTF_8)
                     .build());
@@ -245,16 +246,51 @@ public class RandomMediaController {
             // 支持范围请求（Range requests）
             headers.set(HttpHeaders.ACCEPT_RANGES, "bytes");
             
-            logger.info("准备流式传输视频文件，大小: {} 字节", videoFile.length());
+            // 处理范围请求
+            if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+                String rangeValue = rangeHeader.replace("bytes=", "");
+                long start = 0;
+                long end = fileLength - 1;
+                
+                if (rangeValue.contains("-")) {
+                    String[] ranges = rangeValue.split("-");
+                    start = Long.parseLong(ranges[0]);
+                    if (ranges.length > 1) {
+                        end = Long.parseLong(ranges[1]);
+                    }
+                }
+                
+                // 确保范围有效
+                if (start < 0) start = 0;
+                if (end >= fileLength) end = fileLength - 1;
+                if (start > end) {
+                    return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE).build();
+                }
+                
+                long contentLength = end - start + 1;
+                headers.setContentLength(contentLength);
+                headers.set(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileLength);
+                
+                // 返回部分内容
+                byte[] partialContent = new byte[(int) contentLength];
+                System.arraycopy(buffer, (int) start, partialContent, 0, (int) contentLength);
+                
+                logger.info("处理范围请求: {}-{}/{}", start, end, fileLength);
+                return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+                        .headers(headers)
+                        .body(partialContent);
+            }
             
-            // 返回流式响应
-            return new ResponseEntity<>(resource, headers, HttpStatus.OK);
+            // 返回完整文件
+            headers.setContentLength(fileLength);
+            logger.info("返回完整视频文件，大小: {} 字节", fileLength);
+            return new ResponseEntity<>(buffer, headers, HttpStatus.OK);
             
         } catch (Exception e) {
             String errorMsg = "获取随机视频失败: " + e.getMessage();
             logger.error(errorMsg, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("error", errorMsg));
+                    .body(errorMsg.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         }
     }
 

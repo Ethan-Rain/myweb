@@ -460,14 +460,38 @@
                     mediaElement.disablePictureInPicture = true;
                     
                     const videoUrl = url + '&t=' + new Date().getTime();
+                    
+                    // 直接使用 video 元素加载视频，让浏览器处理 Range 请求
                     const source = document.createElement('source');
                     source.src = videoUrl;
                     source.type = 'video/mp4';
                     mediaElement.appendChild(source);
                     
+                    // 预加载元数据
+                    mediaElement.load();
+                    
+                    // 尝试自动播放
+                    const tryAutoplay = () => {
+                        const playPromise = mediaElement.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => {
+                                console.log('自动播放被阻止，等待用户交互后重试');
+                                // 用户可能需要先与页面交互才能播放
+                                document.addEventListener('click', function onClick() {
+                                    document.removeEventListener('click', onClick);
+                                    mediaElement.muted = true;
+                                    mediaElement.play().catch(e => console.log('用户交互后播放失败:', e));
+                                }, { once: true });
+                            });
+                        }
+                    };
+                    
+                    // 在元数据加载完成后尝试播放
+                    mediaElement.addEventListener('loadedmetadata', tryAutoplay);
+                    
                     // 视频加载完成处理
                     mediaElement.onloadeddata = function() {
-                        console.log('视频加载成功:', videoUrl);
+                        console.log('视频加载成功');
                         this.classList.add('loaded');
                         if (placeholder) placeholder.style.display = 'none';
                         
@@ -498,7 +522,7 @@
                     
                     // 视频加载错误处理
                     mediaElement.onerror = function() {
-                        console.error('视频加载失败:', videoUrl);
+                        console.error('视频加载失败:', videoUrl, this.error);
                         this.style.display = 'none';
                         if (placeholder) {
                             placeholder.textContent = '视频加载失败';
@@ -507,25 +531,6 @@
                             placeholder.style.textAlign = 'center';
                         }
                     };
-                    
-                    // 尝试自动播放（带错误处理）
-                    const tryAutoplay = () => {
-                        const playPromise = mediaElement.play();
-                        if (playPromise !== undefined) {
-                            playPromise.catch(error => {
-                                console.log('自动播放被阻止，等待用户交互后重试');
-                                // 用户可能需要先与页面交互才能播放
-                                document.addEventListener('click', function onClick() {
-                                    document.removeEventListener('click', onClick);
-                                    mediaElement.muted = true;
-                                    mediaElement.play().catch(e => console.log('用户交互后播放失败:', e));
-                                }, { once: true });
-                            });
-                        }
-                    };
-                    
-                    // 在元数据加载完成后尝试播放
-                    mediaElement.addEventListener('loadedmetadata', tryAutoplay);
                 }
                 
                 // 添加触摸事件支持
