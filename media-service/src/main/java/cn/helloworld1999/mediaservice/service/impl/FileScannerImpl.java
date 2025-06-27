@@ -1,11 +1,11 @@
-package cn.helloworld1999.mediaservice.util;
+package cn.helloworld1999.mediaservice.service.impl;
 
 import cn.helloworld1999.mediaservice.dto.ScanResultDTO;
 import cn.helloworld1999.mediaservice.entity.Media;
 import cn.helloworld1999.mediaservice.entity.MediaContent;
-import cn.helloworld1999.mediaservice.mapper.CategoryMapper;
 import cn.helloworld1999.mediaservice.mapper.MediaContentMapper;
 import cn.helloworld1999.mediaservice.mapper.MediaMapper;
+import cn.helloworld1999.mediaservice.service.FileScanner;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -13,36 +13,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.time.LocalDateTime;
 import java.util.*;
 
 /**
- * 文件扫描工具类
+ * 文件扫描服务实现类
  */
-@RestController
-@RequestMapping("/api/scan")
-public class FileScanner {
+@Service
+public class FileScannerImpl implements FileScanner {
     private static final Logger logger = LoggerFactory.getLogger(FileScanner.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Autowired
-    private MediaMapper mediaMapper;
+    // 使用构造函数注入替代字段注入
+    private final MediaMapper mediaMapper;
+    private final MediaContentMapper mediaContentMapper;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Autowired
-    private MediaContentMapper mediaContentMapper;
-
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
-
-    @Autowired
-    private CategoryMapper categoryMapper;
-
+    public FileScannerImpl(MediaMapper mediaMapper, MediaContentMapper mediaContentMapper, RedisTemplate<String, String> redisTemplate) {
+        this.mediaMapper = mediaMapper;
+        this.mediaContentMapper = mediaContentMapper;
+        this.redisTemplate = redisTemplate;
+    }
     /**
      * 默认分类ID
      */
@@ -71,10 +66,8 @@ public class FileScanner {
      * @param useRedis 是否使用Redis存储
      * @return 扫描结果
      */
-    @PostMapping("/directory")
-    public ScanResultDTO scanDirectory(@RequestParam String path,
-                                      @RequestParam(required = false) Long category,
-                                      @RequestParam(required = false) boolean useRedis) {
+    @Override
+    public ScanResultDTO scanDirectory(String path, Long category, boolean useRedis) {
         try {
             File directory = new File(path);
             if (!directory.exists() || !directory.isDirectory()) {
@@ -254,47 +247,6 @@ public class FileScanner {
         }
     }
 
-    /**
-     * 从Redis获取文件信息
-     * @param filePath 文件路径
-     * @return 文件信息
-     */
-    public Map<String, Object> getFileFromRedis(String filePath) {
-        try {
-            String key = MEDIA_KEY_PREFIX + filePath;
-            if (!redisTemplate.hasKey(key)) {
-                logger.debug("Redis中未找到文件: {}", filePath);
-                return null;
-            }
-
-            Map<Object, Object> entries = redisTemplate.opsForHash().entries(key);
-            if (entries == null || entries.isEmpty()) {
-                return null;
-            }
-
-            Map<String, Object> result = new HashMap<>();
-            entries.forEach((k, v) -> {
-                if (v instanceof String) {
-                    try {
-                        if ("media".equals(k)) {
-                            result.put("media", objectMapper.readValue((String) v, Media.class));
-                        } else if ("content".equals(k)) {
-                            result.put("content", objectMapper.readValue((String) v, MediaContent.class));
-                        }
-                    } catch (Exception e) {
-                        logger.error("解析Redis数据失败: {}", filePath, e);
-                    }
-                }
-            });
-
-            logger.info("从Redis获取文件成功: {}", filePath);
-            return result;
-        } catch (Exception e) {
-            logger.error("从Redis获取文件失败: {}", filePath, e);
-            throw e;
-        }
-    }
-
     private String getFileExtension(File file) {
         try {
             String name = file.getName();
@@ -326,7 +278,7 @@ public class FileScanner {
         try {
             if (useRedis) {
                 String key = MEDIA_KEY_PREFIX + file.getAbsolutePath();
-                return redisTemplate.hasKey(key);
+                return Boolean.TRUE.equals(redisTemplate.hasKey(key));
             } else {
                 // MySQL检查
                 QueryWrapper<MediaContent> queryWrapper = new QueryWrapper<>();

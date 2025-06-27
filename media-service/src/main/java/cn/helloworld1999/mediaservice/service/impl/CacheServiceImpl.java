@@ -44,4 +44,9 @@ public class CacheServiceImpl implements CacheService {
         }
         return result;
     }
+
+    @Override
+    public Map<String, Object> syncToCaffeineCache() {
+        return Map.of();
+    }
 }
