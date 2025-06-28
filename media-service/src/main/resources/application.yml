@@ -84,3 +84,9 @@ xxl:
       app-name: media-service  # 执行器的名称，用于在调度中心识别
       ip: 192.168.31.107  # 执行器的IP地址，如果在集群环境下，可以配置为实际的IP
       port: 28082  # 执行器的端口，用于接收调度中心的指令
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: cn.helloworld1999.mediaservice.entity,cn.helloworld1999.mediaservice.dto
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 开启SQL日志，生产环境可以关闭

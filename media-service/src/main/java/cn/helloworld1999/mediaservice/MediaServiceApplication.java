@@ -1,5 +1,6 @@
 package cn.helloworld1999.mediaservice;
 
+import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
@@ -15,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 @SpringBootApplication
 @Configuration
 @ComponentScan(basePackages = {"cn.helloworld1999"})
+@MapperScan("cn.helloworld1999.mediaservice.mapper")
 public class MediaServiceApplication {
 
     public static void main(String[] args) {
