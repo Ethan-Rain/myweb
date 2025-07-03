@@ -13,4 +13,5 @@ public interface CacheService {
      * 同步缓存到Caffeine
      */
     Map<String, Object> syncToCaffeineCache ();
+    Map<String, Object> getAllMediaFromDatabase(Long category);
 }

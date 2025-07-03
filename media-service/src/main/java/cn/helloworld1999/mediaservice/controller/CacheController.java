@@ -19,4 +19,9 @@ public class CacheController {
     public Map<String, Object> syncToRedis() {
         return cacheService.syncToRedis();
     }
+/*    @GetMapping("/syncV2")
+    public Map<String, Object> syncToRedisV2() {
+            CacheServiceImplV2 cacheServiceV2 = new CacheServiceImplV2();
+        return cacheServiceV2.syncToRedis();
+    }*/
 }

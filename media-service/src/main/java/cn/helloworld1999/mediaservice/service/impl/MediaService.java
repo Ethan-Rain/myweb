@@ -26,12 +26,14 @@ import java.util.concurrent.TimeUnit;
  */
 @Service
 public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMediaService {
+    
     @Autowired
     private RedisTemplate redisTemplate;
+    
     @Autowired
     private MediaContentMapper mediaContentMapper;
+    
     Logger logger = LoggerFactory.getLogger(MediaService.class);
-
 
     public List<String> getAllVideos(Long category) {
         try {
