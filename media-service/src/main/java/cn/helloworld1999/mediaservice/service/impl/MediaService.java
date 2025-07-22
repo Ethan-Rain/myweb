@@ -15,10 +15,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,6 +29,9 @@ public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMe
     
     @Autowired
     private MediaContentMapper mediaContentMapper;
+
+    @Autowired
+            private MediaMapper mediaMapper;
     
     Logger logger = LoggerFactory.getLogger(MediaService.class);
 
@@ -174,5 +174,30 @@ public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMe
             logger.error("获取随机图片失败", e);
             return Collections.emptyList();
         }
+    }
+    public Map<String,Object> getRandomMediaInfoJSON(Map<String,Object> queryInfo){
+        String cacheKey = "media:" + queryInfo.get("type") + ":random";
+        
+        // 1. 从缓存随机获取
+        Long size = redisTemplate.opsForList().size(cacheKey);
+        if (size != null && size > 0) {
+            int randomIndex = new Random().nextInt(size.intValue());
+            return (Map<String, Object>) redisTemplate.opsForList().index(cacheKey, randomIndex);
+        }
+        
+        // 2. 缓存未命中则查询数据库
+        List<Map<String,Object>> mediaList = mediaMapper.selectAllByType(queryInfo.get("type").toString());
+        
+        // 3. 查询结果非空才缓存
+        if (mediaList != null && !mediaList.isEmpty()) {
+            // 使用列表结构存储
+            redisTemplate.opsForList().leftPushAll(cacheKey, mediaList.toArray());
+            redisTemplate.expire(cacheKey, 1, TimeUnit.HOURS);
+            
+            // 随机返回一个
+            return mediaList.get(new Random().nextInt(mediaList.size()));
+        }
+        
+        return Collections.emptyMap();
     }
 }

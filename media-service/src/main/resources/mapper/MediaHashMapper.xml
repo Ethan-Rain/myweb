@@ -33,6 +33,13 @@
         AND m.status = 'ACTIVE'
     </select>
 
+    <select id="selectAllByType" resultType="map">
+        SELECT m.id, m.media_type, mc.file_name, mc.file_path 
+        FROM media AS m 
+        INNER JOIN media_content mc ON m.id = mc.media_id
+        WHERE m.media_type = #{mediaType}
+    </select>
+
     <select id="findAllActiveMedia" resultMap="redisMediaHashResultMap">
         SELECT
             m.id,
