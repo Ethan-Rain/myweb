@@ -16,21 +16,30 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.nio.channels.FileChannel;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
 
-/**
- * 文件扫描服务实现类
- */
 @Service
 public class FileScannerImpl implements FileScanner {
     private static final Logger logger = LoggerFactory.getLogger(FileScanner.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    // 使用构造函数注入替代字段注入
     private final MediaMapper mediaMapper;
     private final MediaContentMapper mediaContentMapper;
     private final RedisTemplate<String, String> redisTemplate;
+
+    private static final Long DEFAULT_CATEGORY_ID = 2L;
+    private static final Set<String> SUPPORTED_IMAGE_EXTENSIONS = Set.of(".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp");
+    private static final Set<String> SUPPORTED_VIDEO_EXTENSIONS = Set.of(".mp4", ".avi", ".mkv", ".mov", ".wmv");
+    private static final String MEDIA_KEY_PREFIX = "media:file:";
+    private static final File POISON_PILL = new File("__POISON__");
+    private static final int THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors() * 2 + 1;
 
     @Autowired
     public FileScannerImpl(MediaMapper mediaMapper, MediaContentMapper mediaContentMapper, RedisTemplate<String, String> redisTemplate) {
@@ -38,256 +47,198 @@ public class FileScannerImpl implements FileScanner {
         this.mediaContentMapper = mediaContentMapper;
         this.redisTemplate = redisTemplate;
     }
-    /**
-     * 默认分类ID
-     */
-    private static final Long DEFAULT_CATEGORY_ID = 2L;
 
-    /**
-     * 支持的文件类型
-     */
-    private static final Set<String> SUPPORTED_IMAGE_EXTENSIONS = new HashSet<>(Arrays.asList(
-            ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"
-    ));
-
-    private static final Set<String> SUPPORTED_VIDEO_EXTENSIONS = new HashSet<>(Arrays.asList(
-            ".mp4", ".avi", ".mkv", ".mov", ".wmv"
-    ));
-
-    /**
-     * Redis key前缀
-     */
-    private static final String MEDIA_KEY_PREFIX = "media:file:";
-
-    /**
-     * 递归扫描指定路径下的所有文件
-     * @param path 要扫描的路径
-     * @param category 分类ID
-     * @param useRedis 是否使用Redis存储
-     * @return 扫描结果
-     */
     @Override
     public ScanResultDTO scanDirectory(String path, Long category, boolean useRedis) {
+        ScanResultDTO result = new ScanResultDTO();
+        ScanResultDTO.ScanStats stats = new ScanResultDTO.ScanStats();
+        result.setStats(stats);
+        result.setStoredFiles(new CopyOnWriteArrayList<>());
+        result.setFailedFiles(new CopyOnWriteArrayList<>());
+
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        BlockingQueue<File> fileQueue = new LinkedBlockingQueue<>();
+        CountDownLatch latch = new CountDownLatch(THREAD_POOL_SIZE);
+
         try {
-            File directory = new File(path);
-            if (!directory.exists() || !directory.isDirectory()) {
-                throw new IllegalArgumentException("指定的路径不存在或不是目录: " + path);
+            Path rootPath = Paths.get(path);
+            if (!Files.exists(rootPath) || !Files.isDirectory(rootPath)) {
+                throw new IllegalArgumentException("路径不存在或不是目录: " + path);
             }
 
-            logger.info("开始扫描目录: {}", path);
-            ScanResultDTO result = new ScanResultDTO();
-            ScanResultDTO.ScanStats stats = new ScanResultDTO.ScanStats();
-            stats.setTotalFiles(0);
-            stats.setSuccessCount(0);
-            stats.setFailureCount(0);
-            stats.setSkippedCount(0);
-            stats.setEmptyFiles(0);
-            stats.setUnsupportedFiles(0);
-            result.setStats(stats);
-            result.setFailedFiles(new ArrayList<>());
-            result.setStoredFiles(new ArrayList<>());
+            logger.info("开始扫描目录: {}，线程数: {}", path, THREAD_POOL_SIZE);
 
-            scanDirectoryRecursively(directory, category, useRedis, result);
-            logger.info("目录扫描完成: {}", path);
+            // 启动消费者线程
+            for (int i = 0; i < THREAD_POOL_SIZE; i++) {
+                executor.submit(() -> {
+                    try {
+                        while (true) {
+                            File file = fileQueue.take();
+                            if (file == POISON_PILL) break;
+                            logger.debug("开始处理文件: {}，由线程: {}", file.getAbsolutePath(), Thread.currentThread().getName());
+                            processFile(file, category, useRedis, result);
+                        }
+                    } catch (Exception e) {
+                        logger.error("文件处理线程异常", e);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+
+            // 生产者遍历文件并放入队列
+            logger.info("开始遍历文件树...");
+            Files.walkFileTree(rootPath, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    logger.trace("发现文件: {}", file);
+                    fileQueue.offer(file.toFile());
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            logger.info("文件遍历完毕，准备加入毒丸任务");
+
+            for (int i = 0; i < THREAD_POOL_SIZE; i++) {
+                fileQueue.offer(POISON_PILL);
+            }
+
+            latch.await();
+            executor.shutdown();
+            logger.info("文件扫描全部完成，总数: {}，成功: {}，失败: {}，跳过: {}" , stats.getTotalFiles(), stats.getSuccessCount(), stats.getFailureCount(), stats.getSkippedCount());
             result.setStatus("SUCCESS");
-            return result;
         } catch (Exception e) {
             logger.error("扫描目录失败: {}", path, e);
-            ScanResultDTO result = new ScanResultDTO();
             result.setStatus("FAILURE");
             result.setErrorMessage(e.getMessage());
-            return result;
         }
-    }
 
-    private void scanDirectoryRecursively(File directory, Long category, boolean useRedis, ScanResultDTO result) {
-        try {
-            File[] files = directory.listFiles();
-            if (files == null) {
-                logger.warn("目录为空: {}", directory.getAbsolutePath());
-                return;
-            }
-
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    logger.debug("扫描子目录: {}", file.getAbsolutePath());
-                    scanDirectoryRecursively(file, category, useRedis, result);
-                } else {
-                    processFile(file, category, useRedis, result);
-                }
-            }
-        } catch (Exception e) {
-            logger.error("扫描目录失败: {}", directory.getAbsolutePath(), e);
-            throw e;
-        }
+        return result;
     }
 
     private void processFile(File file, Long category, boolean useRedis, ScanResultDTO result) {
+        ScanResultDTO.ScanStats stats = result.getStats();
+
+        if (!file.exists() || !file.canRead() || file.isDirectory()) {
+            stats.setSkippedCount(stats.getSkippedCount() + 1);
+            logger.debug("跳过无效文件: {}", file.getAbsolutePath());
+            return;
+        }
+
+        if (!isFileAccessible(file)) {
+            stats.setSkippedCount(stats.getSkippedCount() + 1);
+            logger.debug("文件不可访问或被锁定: {}", file.getAbsolutePath());
+            return;
+        }
+
+        String extension = getFileExtension(file);
+        if (extension == null) {
+            stats.setUnsupportedFiles(stats.getUnsupportedFiles() + 1);
+            logger.debug("不支持的文件类型: {}", file.getAbsolutePath());
+            return;
+        }
+
+        if (file.length() <= 0) {
+            stats.setEmptyFiles(stats.getEmptyFiles() + 1);
+            logger.debug("空文件: {}", file.getAbsolutePath());
+            return;
+        }
+
+        if (checkFileExists(file, useRedis)) {
+            stats.setSkippedCount(stats.getSkippedCount() + 1);
+            logger.debug("重复文件，跳过: {}", file.getAbsolutePath());
+            return;
+        }
+
+        Media media = new Media();
+        MediaContent mediaContent = new MediaContent();
+
+        media.setMediaType(SUPPORTED_IMAGE_EXTENSIONS.contains(extension) ? "IMAGE" : "VIDEO");
+        media.setTitle(file.getName());
+        media.setDescription(file.getName());
+        media.setUploadTime(LocalDateTime.now());
+        media.setUpdateTime(LocalDateTime.now());
+        media.setStatus("ACTIVE");
+        media.setCategoryId(category != null ? category : DEFAULT_CATEGORY_ID);
+        media.setSize(file.length());
+        media.setUserId(1L);
+
         try {
-            logger.debug("处理文件: {}", file.getAbsolutePath());
-            
-            String extension = getFileExtension(file);
-            if (extension == null) {
-                logger.debug("跳过非支持文件: {}", file.getAbsolutePath());
-                result.getStats().setUnsupportedFiles(result.getStats().getUnsupportedFiles() + 1);
-                return;
-            }
-
-            // 检查文件大小
-            if (file.length() <= 0) {
-                logger.warn("跳过空文件: {}", file.getAbsolutePath());
-                result.getStats().setEmptyFiles(result.getStats().getEmptyFiles() + 1);
-                return;
-            }
-
-            // 检查是否已存在
-            if (checkFileExists(file, useRedis)) {
-                logger.debug("跳过已存在文件: {}", file.getAbsolutePath());
-                result.getStats().setSkippedCount(result.getStats().getSkippedCount() + 1);
-                return;
-            }
-
-            Media media = new Media();
-            MediaContent mediaContent = new MediaContent();
-
-            // 设置基础信息
-            media.setMediaType(isImageExtension(extension) ? "IMAGE" : "VIDEO");
-            media.setTitle(file.getName());
-            media.setDescription(file.getName());
-            media.setUploadTime(LocalDateTime.now());
-            media.setUpdateTime(LocalDateTime.now());
-            media.setStatus("ACTIVE");
-            
-            // 设置分类ID
-            category = category != null ? category : DEFAULT_CATEGORY_ID;
-            media.setCategoryId(category);
-            
-            media.setSize(file.length());
-            media.setUserId(1L); // TODO: 获取当前登录用户ID
-
             if (useRedis) {
-                // 使用Redis存储
-                try {
-                    String key = MEDIA_KEY_PREFIX + file.getAbsolutePath();
-                    // 保存媒体信息，使用数据库自增ID
-                    mediaMapper.insert(media);
-                    
-                    // 设置内容信息，使用媒体ID
-                    mediaContent.setId(media.getId() + 1); // 确保内容ID与媒体ID不同但有关联
-                    mediaContent.setMediaId(media.getId());
-                    mediaContent.setFilePath(file.getAbsolutePath());
-                    mediaContent.setFileName(file.getName());
-                    mediaContent.setFileExtension(extension);
-                    mediaContent.setStorageType("LOCAL");
-                    mediaContent.setStorageRegion("local");
-                    mediaContent.setWatermarkStatus(false);
-                    mediaContent.setTranscodeStatus("PENDING");
+                String key = MEDIA_KEY_PREFIX + file.getAbsolutePath();
+                mediaMapper.insert(media);
+                mediaContent.setId(media.getId() + 1);
+                mediaContent.setMediaId(media.getId());
+                mediaContent.setFilePath(file.getAbsolutePath());
+                mediaContent.setFileName(file.getName());
+                mediaContent.setFileExtension(extension);
+                mediaContent.setStorageType("LOCAL");
+                mediaContent.setStorageRegion("local");
+                mediaContent.setWatermarkStatus(false);
+                mediaContent.setTranscodeStatus("PENDING");
 
-                    // 使用JSON序列化
-                    ObjectNode mediaNode = objectMapper.valueToTree(media);
-                    ObjectNode contentNode = objectMapper.valueToTree(mediaContent);
-                    redisTemplate.opsForHash().put(key, "media", mediaNode.toString());
-                    redisTemplate.opsForHash().put(key, "content", contentNode.toString());
-                    logger.info("存储到Redis成功: {}", file.getAbsolutePath());
-                    
-                    // 记录成功信息
-                } catch (Exception e) {
-                    logger.error("存储到Redis失败: {}", file.getAbsolutePath(), e);
-                    result.getFailedFiles().add(file.getAbsolutePath());
-                    result.getStats().setFailureCount(result.getStats().getFailureCount() + 1);
-                    return;
-                }
+                ObjectNode mediaNode = objectMapper.valueToTree(media);
+                ObjectNode contentNode = objectMapper.valueToTree(mediaContent);
+                redisTemplate.opsForHash().put(key, "media", mediaNode.toString());
+                redisTemplate.opsForHash().put(key, "content", contentNode.toString());
+                logger.info("写入Redis成功: {}", file.getAbsolutePath());
             } else {
-                // 使用MySQL存储
-                try {
-                    // 保存媒体信息，使用数据库自增ID
-                    mediaMapper.insert(media);
-                    
-                    // 设置内容信息，使用媒体ID
-                    mediaContent.setId(media.getId() + 1); // 确保内容ID与媒体ID不同但有关联
-                    mediaContent.setMediaId(media.getId());
-                    mediaContent.setFilePath(file.getAbsolutePath());
-                    mediaContent.setFileName(file.getName());
-                    mediaContent.setFileExtension(extension);
-                    mediaContent.setStorageType("LOCAL");
-                    mediaContent.setStorageRegion("local");
-                    mediaContent.setWatermarkStatus(false);
-                    mediaContent.setTranscodeStatus("PENDING");
+                mediaMapper.insert(media);
+                mediaContent.setId(media.getId() + 1);
+                mediaContent.setMediaId(media.getId());
+                mediaContent.setFilePath(file.getAbsolutePath());
+                mediaContent.setFileName(file.getName());
+                mediaContent.setFileExtension(extension);
+                mediaContent.setStorageType("LOCAL");
+                mediaContent.setStorageRegion("local");
+                mediaContent.setWatermarkStatus(false);
+                mediaContent.setTranscodeStatus("PENDING");
+                mediaContentMapper.insert(mediaContent);
+                logger.info("写入MySQL成功: {}", file.getAbsolutePath());
+            }
 
-                    // 保存内容信息
-                    mediaContentMapper.insert(mediaContent);
-                    logger.info("存储到MySQL成功: {}", file.getAbsolutePath());
-                    
-                    // 记录成功信息
-                    result.getStats().setSuccessCount(result.getStats().getSuccessCount() + 1);
-                    Map<String, Object> storedFile = new HashMap<>();
-                    storedFile.put("filePath", file.getAbsolutePath());
-                    storedFile.put("mediaType", media.getMediaType());
-                    storedFile.put("storageType", "MySQL");
-                    result.getStoredFiles().add(storedFile);
-                } catch (Exception e) {
-                    logger.error("存储到MySQL失败: {}", file.getAbsolutePath(), e);
-                    result.getStats().setFailureCount(result.getStats().getFailureCount() + 1);
-                    result.getFailedFiles().add(file.getAbsolutePath());
-                    throw e;
-                }
-            }
-            
-            result.getStats().setTotalFiles(result.getStats().getTotalFiles() + 1);
+            stats.setTotalFiles(stats.getTotalFiles() + 1);
+            stats.setSuccessCount(stats.getSuccessCount() + 1);
+            Map<String, Object> stored = new HashMap<>();
+            stored.put("filePath", file.getAbsolutePath());
+            stored.put("mediaType", media.getMediaType());
+            stored.put("storageType", useRedis ? "Redis" : "MySQL");
+            result.getStoredFiles().add(stored);
         } catch (Exception e) {
-            logger.error("处理文件失败: {}", file.getAbsolutePath(), e);
-            result.getStats().setFailureCount(result.getStats().getFailureCount() + 1);
+            stats.setFailureCount(stats.getFailureCount() + 1);
             result.getFailedFiles().add(file.getAbsolutePath());
-            
-            // 如果是分类相关错误，记录具体原因
-            if (e.getMessage() != null && e.getMessage().contains("category_id")) {
-                result.setErrorMessage("指定的分类不存在，请先创建分类");
-            }
-            throw e;
+            logger.error("处理文件失败: {}", file.getAbsolutePath(), e);
+        }
+    }
+
+    private boolean isFileAccessible(File file) {
+        try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ)) {
+            channel.size();
+            return true;
+        } catch (Exception e) {
+            logger.debug("文件无法访问: {}", file.getAbsolutePath());
+            return false;
         }
     }
 
     private String getFileExtension(File file) {
-        try {
-            String name = file.getName();
-            int lastDotIndex = name.lastIndexOf('.');
-            if (lastDotIndex >= 0 && lastDotIndex < name.length() - 1) {
-                String extension = name.substring(lastDotIndex).toLowerCase();
-                if (SUPPORTED_IMAGE_EXTENSIONS.contains(extension) || SUPPORTED_VIDEO_EXTENSIONS.contains(extension)) {
-                    return extension;
-                }
+        String name = file.getName();
+        int lastDot = name.lastIndexOf('.');
+        if (lastDot >= 0 && lastDot < name.length() - 1) {
+            String ext = name.substring(lastDot).toLowerCase();
+            if (SUPPORTED_IMAGE_EXTENSIONS.contains(ext) || SUPPORTED_VIDEO_EXTENSIONS.contains(ext)) {
+                return ext;
             }
-            return null;
-        } catch (Exception e) {
-            logger.error("获取文件扩展名失败: {}", file.getAbsolutePath(), e);
-            throw e;
         }
+        return null;
     }
 
-    private boolean isImageExtension(String extension) {
-        return SUPPORTED_IMAGE_EXTENSIONS.contains(extension);
-    }
-
-    /**
-     * 检查文件是否已存在
-     * @param file 文件
-     * @param useRedis 是否使用Redis
-     * @return 是否已存在
-     */
     private boolean checkFileExists(File file, boolean useRedis) {
-        try {
-            if (useRedis) {
-                String key = MEDIA_KEY_PREFIX + file.getAbsolutePath();
-                return Boolean.TRUE.equals(redisTemplate.hasKey(key));
-            } else {
-                // MySQL检查
-                QueryWrapper<MediaContent> queryWrapper = new QueryWrapper<>();
-                queryWrapper.eq("file_path", file.getAbsolutePath());
-                return mediaContentMapper.selectCount(queryWrapper) > 0;
-            }
-        } catch (Exception e) {
-            logger.error("检查文件是否存在失败: {}", file.getAbsolutePath(), e);
-            return false;
+        if (useRedis) {
+            return Boolean.TRUE.equals(redisTemplate.hasKey(MEDIA_KEY_PREFIX + file.getAbsolutePath()));
+        } else {
+            QueryWrapper<MediaContent> query = new QueryWrapper<>();
+            query.eq("file_path", file.getAbsolutePath());
+            return mediaContentMapper.selectCount(query) > 0;
         }
     }
 }

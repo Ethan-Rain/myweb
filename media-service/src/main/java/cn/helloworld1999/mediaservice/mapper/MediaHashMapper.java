@@ -4,7 +4,6 @@ import cn.helloworld1999.mediaservice.dto.RedisMediaHashDTO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -16,7 +15,7 @@ public interface MediaHashMapper extends BaseMapper<RedisMediaHashDTO> {
      * @param categoryId 分类ID
      * @return 媒体信息列表
      */
-    @Select("""
+/*    @Select("""
         SELECT 
             m.id,
             m.status,
@@ -32,14 +31,14 @@ public interface MediaHashMapper extends BaseMapper<RedisMediaHashDTO> {
         INNER JOIN media_content AS mc ON m.id = mc.media_id
         WHERE m.category_id = #{categoryId}
         AND m.status = 'ACTIVE'
-    """)
+    """)*/
     List<RedisMediaHashDTO> findMediaByCategory(@Param("categoryId") Long categoryId);
 
     /**
      * 查询所有媒体信息
      * @return 媒体信息列表
      */
-    @Select("""
+   /* @Select("""
         SELECT 
             m.id,
             m.status,
@@ -54,6 +53,6 @@ public interface MediaHashMapper extends BaseMapper<RedisMediaHashDTO> {
         FROM media AS m 
         INNER JOIN media_content AS mc ON m.id = mc.media_id
         WHERE m.status = 'ACTIVE'
-    """)
+    """)*/
     List<RedisMediaHashDTO> findAllActiveMedia();
 }

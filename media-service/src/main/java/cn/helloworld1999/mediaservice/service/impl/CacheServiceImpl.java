@@ -17,9 +17,12 @@ public class CacheServiceImpl implements CacheService {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
-    Logger logger = LoggerFactory.getLogger(CacheServiceImpl.class);
+    
     @Autowired
     private MediaService mediaService;
+    
+    Logger logger = LoggerFactory.getLogger(CacheServiceImpl.class);
+
     @Override
     public Map<String, Object> syncToRedis() {
         System.out.println("缓存同步开始");
@@ -47,6 +50,11 @@ public class CacheServiceImpl implements CacheService {
 
     @Override
     public Map<String, Object> syncToCaffeineCache() {
+        return Map.of();
+    }
+
+    @Override
+    public Map<String, Object> getAllMediaFromDatabase(Long category) {
         return Map.of();
     }
 }

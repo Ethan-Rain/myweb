@@ -15,10 +15,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,12 +23,17 @@ import java.util.concurrent.TimeUnit;
  */
 @Service
 public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMediaService {
+    
     @Autowired
     private RedisTemplate redisTemplate;
+    
     @Autowired
     private MediaContentMapper mediaContentMapper;
-    Logger logger = LoggerFactory.getLogger(MediaService.class);
 
+    @Autowired
+            private MediaMapper mediaMapper;
+    
+    Logger logger = LoggerFactory.getLogger(MediaService.class);
 
     public List<String> getAllVideos(Long category) {
         try {
@@ -172,5 +174,52 @@ public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMe
             logger.error("获取随机图片失败", e);
             return Collections.emptyList();
         }
+    }
+    public Map<String,Object> getRandomMediaInfoJSON(Map<String,Object> queryInfo){
+        String cacheKey = "media:" + queryInfo.get("type") + ":random";
+        Map<String,Object> result = new HashMap<>();
+        Object value = null;
+        // 1. 从缓存随机获取
+        Long size = redisTemplate.opsForList().size(cacheKey);
+        if (size != null && size > 0) {
+            int randomIndex = new Random().nextInt(size.intValue());
+            result = (Map<String, Object>) redisTemplate.opsForList().index(cacheKey, randomIndex);
+            value = result.get("file_path");
+            value = ((String) value).replace("\\\\192.168.31.105\\centos_share\\storage\\", "http://192.168.31.105:5555/storage/");
+            value = ((String) value).replace("\\", "/");
+            result.put("file_path", value);
+            return result;
+        }
+        
+        // 2. 缓存未命中则查询数据库
+        List<Map<String,Object>> mediaList = mediaMapper.selectAllByType(queryInfo.get("type").toString());
+        
+        // 3. 查询结果非空才缓存
+        if (mediaList != null && !mediaList.isEmpty()) {
+            // 使用列表结构存储
+            redisTemplate.opsForList().leftPushAll(cacheKey, mediaList.toArray());
+            redisTemplate.expire(cacheKey, 1, TimeUnit.HOURS);
+            
+            // 随机返回一个
+            result = mediaList.get(new Random().nextInt(mediaList.size()));
+            value = result.get("file_path");
+            value = ((String) value).replace("\\\\192.168.31.105\\centos_share\\storage\\", "http://192.168.31.105:5555/storage/");
+            value = ((String) value).replace("\\", "/");
+            result.put("file_path", value);
+            return result;
+        }
+        return Collections.emptyMap();
+    }
+    public List<Map<String,Object>>queryResourcesInTheSameFolder(String path){
+        List<Map<String,Object>> result = new ArrayList<>();
+        path = path.replace("http://192.168.31.105:5555/storage", "").replace("/", "\\").split("\\\\")[2];
+        result = mediaMapper.queryResourcesInTheSameFolder(path);
+        for (Map<String, Object> item : result) {
+            Object value = item.get("file_path");
+            value = ((String) value).replace("\\\\192.168.31.105\\centos_share\\storage\\", "http://192.168.31.105:5555/storage/");
+            value = ((String) value).replace("\\", "/");
+            item.put("file_path", value);
+        }
+    return result;
     }
 }
