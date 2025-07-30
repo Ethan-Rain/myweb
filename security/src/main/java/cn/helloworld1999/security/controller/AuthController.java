@@ -13,15 +13,14 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 认证控制器
  * 处理登录和认证相关请求
  */
 @RestController
+@RequestMapping("/auth")
 public class AuthController {
 
     @Autowired
@@ -38,7 +37,7 @@ public class AuthController {
      * @param loginRequest 登录请求参数
      * @return 登录响应
      */
-    @PostMapping("/auth/login")
+    @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest loginRequest) {
         try {
             // 验证用户名和密码
@@ -66,7 +65,7 @@ public class AuthController {
      * @param registerRequest 注册请求参数
      * @return 注册响应
      */
-    @PostMapping("/auth/register")
+    @PostMapping("/register")
     public RegisterResponse register(@RequestBody RegisterRequest registerRequest) {
         try {
             Users user = registerService.register(registerRequest);
@@ -80,7 +79,7 @@ public class AuthController {
      * 处理注销请求
      * @return 注销响应
      */
-    @PostMapping("/auth/logout")
+    @PostMapping("/logout")
     public String logout() {
         // 清除SecurityContext中的认证信息
         SecurityContextHolder.clearContext();

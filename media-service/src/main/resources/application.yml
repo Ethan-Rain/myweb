@@ -75,6 +75,9 @@ logging:
   level:
     org.springframework.cloud.gateway: debug
     reactor.netty: debug
+    com.baomidou.mybatisplus: debug
+    cn.helloworld1999.mediaservice.mapper: debug
+
 xxl:
   job:
     #access-token: default_token  # 调度中心的访问令牌，用于身份验证
@@ -89,4 +92,4 @@ mybatis:
   type-aliases-package: cn.helloworld1999.mediaservice.entity,cn.helloworld1999.mediaservice.dto
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 开启SQL日志，生产环境可以关闭
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

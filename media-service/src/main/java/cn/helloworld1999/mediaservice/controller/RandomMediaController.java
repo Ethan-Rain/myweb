@@ -299,4 +299,8 @@ public class RandomMediaController {
     public ResponseEntity<?> getRandomImageInfo(@RequestBody Map<String,Object> queryInfo) {
         return ResponseEntity.ok(mediaService.getRandomMediaInfoJSON(queryInfo));
     }
+    @PostMapping("/queryResourcesInTheSameFolder")
+    public ResponseEntity<?> queryResourcesInTheSameFolder(@RequestBody Map<String,Object> queryInfo) {
+        return ResponseEntity.ok(mediaService.queryResourcesInTheSameFolder((String)queryInfo.get("file_path")));
+    }
 }

@@ -11,14 +11,18 @@ public class CorsConfig {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:5173"); // 允许的前端地址
+        // 允许所有域名进行跨域调用
+        config.addAllowedOriginPattern("*");
+        // 允许任何请求头
         config.addAllowedHeader("*");
+        // 允许任何方法（POST、GET等）
         config.addAllowedMethod("*");
-        
+        // 允许携带凭证
+        config.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-        
+
         return new CorsWebFilter(source);
     }
 }

@@ -177,12 +177,18 @@ public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMe
     }
     public Map<String,Object> getRandomMediaInfoJSON(Map<String,Object> queryInfo){
         String cacheKey = "media:" + queryInfo.get("type") + ":random";
-        
+        Map<String,Object> result = new HashMap<>();
+        Object value = null;
         // 1. 从缓存随机获取
         Long size = redisTemplate.opsForList().size(cacheKey);
         if (size != null && size > 0) {
             int randomIndex = new Random().nextInt(size.intValue());
-            return (Map<String, Object>) redisTemplate.opsForList().index(cacheKey, randomIndex);
+            result = (Map<String, Object>) redisTemplate.opsForList().index(cacheKey, randomIndex);
+            value = result.get("file_path");
+            value = ((String) value).replace("\\\\192.168.31.105\\centos_share\\storage\\", "http://192.168.31.105:5555/storage/");
+            value = ((String) value).replace("\\", "/");
+            result.put("file_path", value);
+            return result;
         }
         
         // 2. 缓存未命中则查询数据库
@@ -195,9 +201,25 @@ public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMe
             redisTemplate.expire(cacheKey, 1, TimeUnit.HOURS);
             
             // 随机返回一个
-            return mediaList.get(new Random().nextInt(mediaList.size()));
+            result = mediaList.get(new Random().nextInt(mediaList.size()));
+            value = result.get("file_path");
+            value = ((String) value).replace("\\\\192.168.31.105\\centos_share\\storage\\", "http://192.168.31.105:5555/storage/");
+            value = ((String) value).replace("\\", "/");
+            result.put("file_path", value);
+            return result;
         }
-        
         return Collections.emptyMap();
+    }
+    public List<Map<String,Object>>queryResourcesInTheSameFolder(String path){
+        List<Map<String,Object>> result = new ArrayList<>();
+        path = path.replace("http://192.168.31.105:5555/storage", "").replace("/", "\\").split("\\\\")[2];
+        result = mediaMapper.queryResourcesInTheSameFolder(path);
+        for (Map<String, Object> item : result) {
+            Object value = item.get("file_path");
+            value = ((String) value).replace("\\\\192.168.31.105\\centos_share\\storage\\", "http://192.168.31.105:5555/storage/");
+            value = ((String) value).replace("\\", "/");
+            item.put("file_path", value);
+        }
+    return result;
     }
 }

@@ -10,13 +10,24 @@ spring:
         locator:
           enabled: true  # 启用服务发现
           lower-case-service-id: true  # 服务名小写
+
+      # ✅ 添加 globalcors 配置，解决 CORS 问题
       globalcors:
+        add-to-simple-url-handler-mapping: true
         corsConfigurations:
           '[/**]':
-            allowedOrigins: "http://localhost:8082"
-            allowedMethods: "GET, POST, PUT, DELETE, OPTIONS"
-            allowedHeaders: "*"
+            allowedOriginPatterns:
+              - "http://localhost:5173"   # Vue 开发环境地址，按你实际端口调整
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
             allowCredentials: true
+
       routes:
         - id: static-resources
           uri: file:///static/
@@ -37,15 +48,15 @@ spring:
           predicates:
             - Path=/api/media/**
           filters:
-            #- RewritePath=/api/media/(?<segment>.*), /random/$\{segment}
             - StripPrefix=2
 
         - id: security-service
           uri: lb://security
           predicates:
-            - Path=/api/security/**
+            - Path=/security/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
+
     nacos:
       discovery:
         enabled: true

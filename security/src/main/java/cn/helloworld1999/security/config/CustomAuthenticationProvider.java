@@ -1,7 +1,6 @@
 package cn.helloworld1999.security.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -10,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.security.authentication.BadCredentialsException;
 
 /**
  * 自定义认证提供者
@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class CustomAuthenticationProvider implements AuthenticationProvider {
 
-    @Lazy
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
 
@@ -39,9 +38,9 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             org.springframework.security.core.userdetails.User userDetails = 
                 (org.springframework.security.core.userdetails.User) userDetailsService.loadUserByUsername(username);
 
-            // 验证密码
-            if (!passwordEncoder.matches(password, userDetails.getPassword())) {
-                throw new AuthenticationException("密码错误") {};
+            // 验证密码 (临时修改为明文比较)
+            if (!password.equals(userDetails.getPassword())) {
+                throw new BadCredentialsException("密码错误");
             }
 
             // 返回认证成功的令牌
@@ -51,7 +50,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
                 userDetails.getAuthorities()
             );
         } catch (UsernameNotFoundException e) {
-            throw new AuthenticationException("用户不存在") {};
+            throw new BadCredentialsException("用户不存在");
         }
     }
 
