@@ -14,7 +14,10 @@ public class CorsConfig {
         // 允许所有域名进行跨域调用
         config.addAllowedOriginPattern("*");
         // 允许任何请求头
+        // 允许任何请求头
+        // 允许任何方法（POST、GET等）
         config.addAllowedHeader("*");
+        // 允许携带凭证
         // 允许任何方法（POST、GET等）
         config.addAllowedMethod("*");
         // 允许携带凭证

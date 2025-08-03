@@ -3,9 +3,11 @@ package cn.helloworld1999.security;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @MapperScan("cn.helloworld1999.common.mapper")
+@ComponentScan(basePackages = {"cn.helloworld1999"})
 public class SecurityApplication {
 
     public static void main(String[] args) {

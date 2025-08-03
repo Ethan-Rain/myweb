@@ -1,6 +1,6 @@
 package cn.helloworld1999.security.filter;
 
-import cn.helloworld1999.security.util.JwtTokenUtil;
+import cn.helloworld1999.security.service.TokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,13 +26,12 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
-
-    private final JwtTokenUtil jwtTokenUtil;
     private final UserDetailsService userDetailsService;
-
     @Autowired
-    public JwtAuthenticationFilter(JwtTokenUtil jwtTokenUtil, UserDetailsService userDetailsService) {
-        this.jwtTokenUtil = jwtTokenUtil;
+    TokenService tokenService;
+    @Autowired
+    public JwtAuthenticationFilter(TokenService tokenService, UserDetailsService userDetailsService) {
+        this.tokenService = tokenService;
         this.userDetailsService = userDetailsService;
     }
 
@@ -49,7 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
             jwtToken = requestTokenHeader.substring(7);
             try {
-                username = jwtTokenUtil.getUsernameFromToken(jwtToken);
+                username = tokenService.extractPayload(jwtToken).getUsername();
             } catch (Exception e) {
                 logger.warn("JWT token 解析失败: " + e.getMessage());
             }
@@ -61,7 +60,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
                 // 如果令牌有效
-                if (jwtTokenUtil.validateToken(jwtToken, userDetails)) {
+                if (tokenService.validateToken(jwtToken)) {
                     // 创建认证信息
                     UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = 
                         new UsernamePasswordAuthenticationToken(
