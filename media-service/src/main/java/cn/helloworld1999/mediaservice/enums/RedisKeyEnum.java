@@ -1,4 +1,4 @@
-package cn.helloworld1999.enums;
+package cn.helloworld1999.mediaservice.enums;
 
 public enum RedisKeyEnum {
     CACHE_IMAGE("cache:images:"),

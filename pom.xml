@@ -17,7 +17,7 @@
         <module>user-service</module>
         <module>media-service</module>
         <module>web-crawler</module>
-
+        <module>synology-service</module>
     </modules>
 
     <!-- =============== 全局属性配置 =============== -->
@@ -86,7 +86,10 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-webmvc</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
 
     </dependencies>
 

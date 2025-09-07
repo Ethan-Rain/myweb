@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,8 @@ public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMe
 
     @Autowired
     private MediaMapper mediaMapper;
-
+    @Value("${custom-configuration.enable-redis}")
+    private Boolean enableRedis;
     Logger logger = LoggerFactory.getLogger(MediaService.class);
 
     public List<String> getAllVideos(Long category) {
@@ -138,38 +140,28 @@ public class MediaService extends ServiceImpl<MediaMapper, Media> implements IMe
     public List<String> getRandomImages(Long category) {
         try {
             logger.info("开始获取随机图片，分类ID: {}", category);
-
+            List<String> allImages = null;
             // 从Redis获取所有图片
-            ValueOperations<String, Object> ops = redisTemplate.opsForValue();
-            String cacheKey = "cache:images:" + category;
-            logger.info("尝试从Redis获取缓存，key: {}", cacheKey);
-
-            List<String> allImages = (List<String>) ops.get(cacheKey);
-            if (CollectionUtils.isEmpty(allImages)) {
-                logger.info("Redis中未找到缓存，从数据库获取图片...");
-                // 如果Redis中没有数据，从数据库获取
-                allImages = getAllImages(category);
-                logger.info("从数据库获取到 {} 张图片", allImages != null ? allImages.size() : 0);
-
-                // 将结果存入Redis
-                if (!CollectionUtils.isEmpty(allImages)) {
-                    logger.info("将图片数据存入Redis，key: {}", cacheKey);
-                    ops.set(cacheKey, allImages, 1, TimeUnit.HOURS);
+            if (enableRedis) {
+                ValueOperations<String, Object> ops = redisTemplate.opsForValue();
+                String cacheKey = "cache:images:" + category;
+                logger.info("尝试从Redis获取缓存，key: {}", cacheKey);
+                allImages = (List<String>) ops.get(cacheKey);
+                if (CollectionUtils.isEmpty(allImages)) {
+                    logger.info("Redis中未找到缓存，从数据库获取图片...");
                 }
-            } else {
-                logger.info("从Redis获取到 {} 张图片", allImages.size());
             }
-
+            // 如果Redis中没有数据，从数据库获取
+            allImages = getAllImages(category);
+            logger.info("从数据库获取到 {} 张图片", allImages != null ? allImages.size() : 0);
             if (CollectionUtils.isEmpty(allImages)) {
                 logger.warn("未找到图片数据，分类ID: {}", category);
                 return Collections.emptyList();
             }
-
             // 随机选择一张图片
             int randomIndex = new Random().nextInt(allImages.size());
             String selectedImage = allImages.get(randomIndex);
             logger.info("随机选择第 {} 张图片: {}", randomIndex, selectedImage);
-
             return Collections.singletonList(selectedImage);
         } catch (Exception e) {
             logger.error("获取随机图片失败", e);

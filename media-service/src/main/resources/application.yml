@@ -1,6 +1,7 @@
 server:
   port: 8082
-
+custom-configuration:
+  enable-redis: true
 spring:
   application:
     name: media-service
@@ -49,8 +50,8 @@ spring:
   # Redis配置
   redis:
     host: 192.168.31.106
-    port: 26739
-    password: EMFFkhXxtKDwHpmp
+    port: 6379
+    password: root
     timeout: 5000ms
     lettuce:
       pool:
@@ -78,18 +79,17 @@ logging:
     com.baomidou.mybatisplus: debug
     cn.helloworld1999.mediaservice.mapper: debug
 
-xxl:
-  job:
-    #access-token: default_token  # 调度中心的访问令牌，用于身份验证
-    admin:
-      addresses: http://192.168.31.106:18080/xxl-job-admin  # 调度中心的地址
-    executor:
-      app-name: media-service  # 执行器的名称，用于在调度中心识别
-      ip: 192.168.31.107  # 执行器的IP地址，如果在集群环境下，可以配置为实际的IP
-      port: 28082  # 执行器的端口，用于接收调度中心的指令
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: cn.helloworld1999.mediaservice.entity,cn.helloworld1999.mediaservice.dto
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+synology:
+  host: 192.168.31.103
+  port: 5001
+  username: yixinrui
+  password: "Hello,World!2022"
+  use-https: true
+  skip-ssl: true

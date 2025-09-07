@@ -1,0 +1,8 @@
+server:
+  port: 8092   # 你可以指定端口
+
+synology:
+  api:
+    base-url: https://192.168.31.103:5001/webapi
+    account: yixinrui
+    passwd: Hello,World!2022

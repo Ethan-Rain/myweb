@@ -13,7 +13,9 @@ import org.springframework.stereotype.Component;
 public class LoggingAspect {
 
     private static final Logger logger = LoggerFactory.getLogger(LoggingAspect.class);
-
+    /*
+    AOP 输出切点策略名
+     */
     @Before("execution(* cn.helloworld1999.mediaservice.controller.RandomMediaController.*(..))")
     public void logBefore(JoinPoint joinPoint) {
         logger.info("Executing method: " + joinPoint.getSignature().getName());

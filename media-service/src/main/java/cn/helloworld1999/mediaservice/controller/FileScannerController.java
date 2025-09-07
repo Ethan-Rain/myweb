@@ -3,6 +3,7 @@ package cn.helloworld1999.mediaservice.controller;
 import cn.helloworld1999.mediaservice.dto.ScanResultDTO;
 import cn.helloworld1999.mediaservice.service.impl.FileScannerImpl;
 import cn.helloworld1999.mediaservice.service.impl.FileScannerV2Impl;
+import cn.helloworld1999.mediaservice.service.impl.FileScannerV4Impl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,9 @@ public class FileScannerController {
     FileScannerImpl fileScanner;
     @Autowired
     FileScannerV2Impl fileScannerV2;
+    @Autowired
+    FileScannerV4Impl fileScannerV4;
+
     /**
      * 扫描指定目录
      * @param path 目录路径
@@ -33,11 +37,27 @@ public class FileScannerController {
             @RequestParam(required = false, defaultValue = "false") boolean useRedis) {
         return fileScanner.scanDirectory(path, category, useRedis);
     }
+
     @PostMapping("/directory/v2")
     public ScanResultDTO scanDirectoryV2(
             @RequestParam String path,
             @RequestParam(required = false) Long category,
             @RequestParam(required = false, defaultValue = "false") boolean useRedis) {
         return fileScannerV2.scanDirectory(path, category, useRedis);
+    }
+
+    /**
+     * 使用群晖API扫描指定目录（V4���本）
+     * @param path 目录路径
+     * @param category 分类ID
+     * @param useRedis 是否使用Redis缓存
+     * @return 扫描结果
+     */
+    @PostMapping("/directory/v4")
+    public ScanResultDTO scanDirectoryV4(
+            @RequestParam String path,
+            @RequestParam(required = false) Long category,
+            @RequestParam(required = false, defaultValue = "true") boolean useRedis) {
+        return fileScannerV4.scanDirectory(path, category, useRedis);
     }
 }
