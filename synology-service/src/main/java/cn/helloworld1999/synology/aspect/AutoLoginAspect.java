@@ -22,9 +22,11 @@ public class AutoLoginAspect {
     SynologyAuthService synologyAuthService;
     @Autowired
     ObjectMapper objectMapper;
+
+    @Autowired
+    SynologyApiProperties properties; // ✅ 注入配置对象
     @Before("@annotation(cn.helloworld1999.synology.annotation.AutoLogin)")
     public void beforeAutoLogin(JoinPoint joinPoint) {
-        SynologyApiProperties properties = new SynologyApiProperties();
         Object target = joinPoint.getTarget();
         if (!(target instanceof SynologyBaseService service)) {
             log.info("不是或没有继承SynologyBaseService类,不进行自动登录");

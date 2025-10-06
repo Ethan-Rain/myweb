@@ -1,31 +1,35 @@
 package cn.helloworld1999.synology.service.impl;
 
 import cn.helloworld1999.synology.api.SynologyReadService;
+import cn.helloworld1999.synology.bean.FileData;
+import cn.helloworld1999.synology.bean.FileListResult;
+import cn.helloworld1999.synology.bean.FileTree;
 import cn.helloworld1999.synology.service.IFileService;
 import groovy.util.logging.Log4j;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import cn.hutool.json.JSONUtil;
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Log4j
 @Service
 public class FileService implements IFileService {
-    @Autowired
-    SynologyReadService synologyReadService;
-    public class FilePathTrue{
-        String isDir;
-        String name;
-        String path;
-        List<FilePathTrue> children;
-    }
+@Autowired
+SynologyReadService synologyReadService;
     @Override
-    public Map<String, Object> getFileTree(String name) {
-       String resultJson = JSONUtil.toJsonStr(synologyReadService.getFileList(name));
-        log.info("resultJson:{}",resultJson);
-        return Map.of();
+    public FileData getFileData(String name) {
+        String resultJson = JSONUtil.toJsonStr(synologyReadService.getFileList(name));
+        FileListResult fileListResult = JSONUtil.toBean(resultJson, FileListResult.class);
+        if (fileListResult.isSuccess()) {
+            FileData fileData = fileListResult.getData();
+            return fileListResult.getData();
+        }
+        return null;
+    }
+
+    @Override
+    public FileTree generateFileTree(FileData fileData) {
+        return null;
     }
 }
