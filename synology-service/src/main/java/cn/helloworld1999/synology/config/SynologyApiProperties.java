@@ -11,4 +11,5 @@ public class SynologyApiProperties {
     private String baseUrl;
     private String account;
     private String passwd;
+    private String tokenTimeout;
 }

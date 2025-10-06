@@ -1,4 +1,4 @@
-package cn.helloworld1999.synology.service;
+package cn.helloworld1999.synology.api;
 
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;

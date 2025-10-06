@@ -33,6 +33,7 @@
         <org-mybatis.version>2.2.2</org-mybatis.version>
         <org-mysql.version>8.0.33</org-mysql.version>
         <cn.hutool.version>5.8.37</cn.hutool.version>
+        <nacos-client.version>3.0.2</nacos-client.version>
     </properties>
 
     <!-- =============== 项目依赖配置 =============== -->
@@ -44,7 +45,6 @@
             <version>1.18.26</version>
             <optional>true</optional>
         </dependency>
-
         <!-- 新增Nacos依赖 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
@@ -63,6 +63,21 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+            <version>${nacos-client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-common</artifactId>
+            <version>${nacos-client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-api</artifactId>
+            <version>${nacos-client.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
@@ -90,6 +105,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
+
 
     </dependencies>
 

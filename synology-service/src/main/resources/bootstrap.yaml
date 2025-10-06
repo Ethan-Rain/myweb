@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: synology-service
+  cloud:
+    nacos:
+      config:
+        server-addr: localhost:8848 # nacos ?????
+        file-extension: yaml # ??????????yaml
+        username: nacos # nacos ?????
+        password: nacos # nacos ????
+      discovery:
+        register-enabled: true
+        naming-request-timeout: 5000 # ?????????
+server:
+  port: 8092 # ??????

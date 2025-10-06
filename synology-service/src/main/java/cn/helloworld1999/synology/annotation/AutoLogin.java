@@ -7,5 +7,8 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
+/*
+@TODO 这里要加一个测试sid有效性的功能，不然调用一次登录一次 太不合理了
+ */
 public @interface AutoLogin {
 }
