@@ -35,7 +35,7 @@ public class AutoLoginAspect {
         log.info("进入自动登录切面");
         if (service.getSid() != null) {
             log.info("已存在sid:{}", sid);
-            if (System.currentTimeMillis() - lastLoginTime > Long.parseLong(properties.getTokenTimeout())) {
+            if (System.currentTimeMillis() - lastLoginTime > Long.parseLong(properties.getTokenTimeout()) * 1000) {
                 log.info("sid已过期,重新登录");
                 service.setSidAndCookie(sid);
                 log.info("已为目标对象赋值sid:{}", service.getSid());

@@ -38,21 +38,20 @@ public class FileTree {
     /**
      * 递归构建文件树
      * @param current 当前节点
+     * @param flatList 扁平化列表，用于存储所有节点
      * @param service Synology API 服务
      * @return 构建好的 FileTree
      */
-    public static FileTree getAllFileTree(FileTree current, SynologyReadService service) {
+    public static FileTree getAllFileTree(FileTree current, SynologyReadService service, List<FileTree> flatList) {
+        flatList.add(current); // 先加入 flatList
+
         if (!current.isdir) {
             return current; // 文件直接返回
         }
 
-        // 1. 先获取 Map
+        // 调用群晖 API
         Map<String, Object> resultMap = service.getFileList(current.getPath());
-
-        // 2. 转成 JSON 字符串
         String jsonStr = JSONUtil.toJsonStr(resultMap);
-
-        // 3. JSON 字符串转对象
         FileListResult fileListResult = JSONUtil.toBean(jsonStr, FileListResult.class);
 
         if (!fileListResult.isSuccess()) {
@@ -64,8 +63,8 @@ public class FileTree {
                 .map(fileItem -> {
                     FileTree child = new FileTree();
                     child.fileItemToFileTree(fileItem);
-                    // 递归
-                    return getAllFileTree(child, service);
+                    // 递归，同时传 flatList
+                    return getAllFileTree(child, service, flatList);
                 })
                 .toList();
 
@@ -73,4 +72,5 @@ public class FileTree {
         current.setChildrenCount(children.size());
         return current;
     }
+
 }

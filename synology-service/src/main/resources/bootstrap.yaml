@@ -11,5 +11,15 @@ spring:
       discovery:
         register-enabled: true
         naming-request-timeout: 5000 # ?????????
+  datasource:
+    url: jdbc:mysql://192.168.31.106:3306/wakaba_mutsumi?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: wakaba_mutsumi
+    password: wakaba_mutsumi
+    driver-class-name: com.mysql.cj.jdbc.Driver
+mybatis-plus:
+  mapper-locations: classpath:/mapper/*.xml   # 如果你写了 XML 映射文件
+  type-aliases-package: cn.helloworld1999.synology.entity
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 server:
   port: 8092 # ??????

@@ -5,6 +5,8 @@ import cn.helloworld1999.synology.dto.FileData;
 import cn.helloworld1999.synology.dto.FileItem;
 import cn.helloworld1999.synology.dto.FileListResult;
 import cn.helloworld1999.synology.bean.FileTree;
+import cn.helloworld1999.synology.entity.FileInfoEntity;
+import cn.helloworld1999.synology.mapper.FileInfoMapper;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.stereotype.Service;
 
 import java.sql.Time;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -21,6 +24,8 @@ import java.util.List;
 public class FileServiceTest implements IFileService {
     @Autowired
     public SynologyReadService synologyReadService;
+    @Autowired
+    public FileInfoMapper fileInfoMapper;
 
     @Test
     public void getFileData() {
@@ -37,7 +42,7 @@ public class FileServiceTest implements IFileService {
     public void getFileTree(){
         Time startTime = new Time(System.currentTimeMillis());
         FileData fileData = null;
-        String path = "/存储空间/2.1.newSeSe/千阳长离";
+        String path = "/存储空间/2.1.newSeSe";
 
         String resultJson = JSONUtil.toJsonStr(synologyReadService.getFileList(path));
         System.out.println("返回的json字符串：");
@@ -52,7 +57,7 @@ public class FileServiceTest implements IFileService {
             System.out.println( files.size());
             System.out.println(files);
 
-            fileTree.setName("根目录");
+            fileTree.setName("根目录:"+path);
             fileTree.setPath(path);
             fileTree.setIsdir(true);
             fileTree.setChildrenCount(files.size());
@@ -61,14 +66,17 @@ public class FileServiceTest implements IFileService {
                 child.fileItemToFileTree(fileItem);
                 return child;
             }).toList());
-            FileTree fullTree = FileTree.getAllFileTree(fileTree,synologyReadService);
+            List<FileTree> flatList = new ArrayList<>();
+            FileTree.getAllFileTree(fileTree,synologyReadService,flatList);
             Time endTime = new Time(System.currentTimeMillis());
-            Time printTime = new Time(System.currentTimeMillis());
-            System.out.println("打印文件树：");
-            System.out.println(fullTree);
-            previewFileTree(fullTree, 0);
-            System.out.println("打印耗时：" + (printTime.getTime() - endTime.getTime()));
             System.out.println("查询耗时：" + (endTime.getTime() - startTime.getTime()));
+            List<FileInfoEntity> entityList = flatList.stream()
+                    .map(FileInfoEntity::convertToEntity)
+                    .toList();
+            long startInsert = System.currentTimeMillis();
+            insertBatchSafe(entityList);
+            long endInsert = System.currentTimeMillis();
+            System.out.println("插入数据库耗时：" + (endInsert - startInsert) + "ms");
         }
     }
     public void previewFileTree(FileTree node, int level) {
@@ -79,6 +87,13 @@ public class FileServiceTest implements IFileService {
             for (FileTree child : node.getChildren()) {
                 previewFileTree(child, level + 1);
             }
+        }
+    }
+    public void insertBatchSafe(List<FileInfoEntity> list) {
+        int batchSize = 100; // 每批100条
+        for (int i = 0; i < list.size(); i += batchSize) {
+            List<FileInfoEntity> batch = list.subList(i, Math.min(i + batchSize, list.size()));
+            fileInfoMapper.insertBatch(batch);
         }
     }
 
