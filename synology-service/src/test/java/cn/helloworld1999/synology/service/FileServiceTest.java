@@ -1,9 +1,9 @@
 package cn.helloworld1999.synology.service;
 
 import cn.helloworld1999.synology.api.SynologyReadService;
-import cn.helloworld1999.synology.bean.FileData;
-import cn.helloworld1999.synology.bean.FileItem;
-import cn.helloworld1999.synology.bean.FileListResult;
+import cn.helloworld1999.synology.dto.FileData;
+import cn.helloworld1999.synology.dto.FileItem;
+import cn.helloworld1999.synology.dto.FileListResult;
 import cn.helloworld1999.synology.bean.FileTree;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.stereotype.Service;
 
+import java.sql.Time;
 import java.util.List;
 
 @Slf4j
@@ -31,14 +32,16 @@ public class FileServiceTest implements IFileService {
         }
     }
 
-    @Autowired
-    FileTree fileTree;
+    FileTree fileTree = new FileTree();
     @Test
     public void getFileTree(){
+        Time startTime = new Time(System.currentTimeMillis());
         FileData fileData = null;
-        String path = "/存储空间/14.书籍";
+        String path = "/存储空间/2.1.newSeSe/千阳长离";
 
         String resultJson = JSONUtil.toJsonStr(synologyReadService.getFileList(path));
+        System.out.println("返回的json字符串：");
+        System.out.println(resultJson);
         FileListResult fileListResult = JSONUtil.toBean(resultJson, FileListResult.class);
         if (fileListResult.isSuccess()) {
             fileData = fileListResult.getData();
@@ -47,6 +50,7 @@ public class FileServiceTest implements IFileService {
             List<FileItem> files = fileData.getFiles();
             System.out.println("测试输出：");
             System.out.println( files.size());
+            System.out.println(files);
 
             fileTree.setName("根目录");
             fileTree.setPath(path);
@@ -57,10 +61,28 @@ public class FileServiceTest implements IFileService {
                 child.fileItemToFileTree(fileItem);
                 return child;
             }).toList());
-            FileTree fileTree1 = fileTree.getAllFileTree(fileTree);
-            System.out.println(fileTree1);
+            FileTree fullTree = FileTree.getAllFileTree(fileTree,synologyReadService);
+            Time endTime = new Time(System.currentTimeMillis());
+            Time printTime = new Time(System.currentTimeMillis());
+            System.out.println("打印文件树：");
+            System.out.println(fullTree);
+            previewFileTree(fullTree, 0);
+            System.out.println("打印耗时：" + (printTime.getTime() - endTime.getTime()));
+            System.out.println("查询耗时：" + (endTime.getTime() - startTime.getTime()));
         }
     }
+    public void previewFileTree(FileTree node, int level) {
+        String indent = "---".repeat(level);
+        System.out.println(indent + node.getName() + (node.isIsdir() ? "/" : ""));
+
+        if (node.isIsdir() && node.getChildren() != null) {
+            for (FileTree child : node.getChildren()) {
+                previewFileTree(child, level + 1);
+            }
+        }
+    }
+
+
 
     @Override
     public FileData getFileData(String name) {

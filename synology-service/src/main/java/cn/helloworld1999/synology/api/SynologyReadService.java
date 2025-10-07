@@ -3,11 +3,13 @@ package cn.helloworld1999.synology.api;
 import cn.helloworld1999.synology.annotation.AutoLogin;
 import cn.helloworld1999.synology.client.SynologyFeignClient;
 import cn.helloworld1999.synology.config.SynologyApiProperties;
+import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -31,12 +33,29 @@ public class SynologyReadService extends SynologyBaseService{
         fileListParams.put("sid", this.sid); // 使用实例变量 sid（AOP 应赋值给它）
 
         // 可选参数（修复：time 改为 mtime，群晖 API 无 time 字段）
-        fileListParams.put("additional", "real_path,size,owner,mtime,perm");
+        List<String> additionalFields = List.of(
+                "real_path",
+                "size",
+                "owner",
+                "time",
+                "perm",
+                "type",
+                "mount_point_type",
+                "description",
+                "indexed"
+        );
 
-        // 分页和排序参数
-        fileListParams.put("limit", 50);
+        fileListParams.put("additional", JSONUtil.toJsonStr(additionalFields));
+
+        fileListParams.put("offset", 0);
+        fileListParams.put("limit", 1000);
         fileListParams.put("sort_by", "name");
-        fileListParams.put("sort_direction", "asc");
+        fileListParams.put("sort_direction", "ASC");  // 注意大小写
+        fileListParams.put("action", "list");         // 新增
+        fileListParams.put("check_dir", true);        // 新增
+        fileListParams.put("filetype", "all");
+
+
 
         // 调用 Feign 客户端（使用局部变量 fileListParams）
         System.out.println("cookie: " + getCookie());

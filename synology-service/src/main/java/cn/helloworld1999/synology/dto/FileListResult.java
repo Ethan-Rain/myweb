@@ -1,4 +1,4 @@
-package cn.helloworld1999.synology.bean;
+package cn.helloworld1999.synology.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

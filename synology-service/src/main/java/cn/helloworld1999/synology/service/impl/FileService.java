@@ -1,8 +1,8 @@
 package cn.helloworld1999.synology.service.impl;
 
 import cn.helloworld1999.synology.api.SynologyReadService;
-import cn.helloworld1999.synology.bean.FileData;
-import cn.helloworld1999.synology.bean.FileListResult;
+import cn.helloworld1999.synology.dto.FileData;
+import cn.helloworld1999.synology.dto.FileListResult;
 import cn.helloworld1999.synology.bean.FileTree;
 import cn.helloworld1999.synology.service.IFileService;
 import groovy.util.logging.Log4j;
