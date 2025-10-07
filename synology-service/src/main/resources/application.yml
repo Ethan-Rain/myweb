@@ -1,5 +1,5 @@
 server:
-  port: 8092   # 你可以指定端口
+  port: 18093   # 你可以指定端口
 
 synology:
   api:
