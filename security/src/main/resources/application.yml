@@ -75,6 +75,7 @@ logging:
 mybatis:
   mapper-locations: classpath:cn/helloworld1999/common/mapper/*.xml
   type-aliases-package: cn.helloworld1999.common.domain
-jwt:
-  secret: U0VDUkVURUZPUkpXVEtFWTEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MA==  # 使用Base64编码的密钥
-  expiration: 86400000     # JWT过期时间（毫秒），这里设置为24小时
+security:
+  token:
+    secret: QMQfdNyXMJUbQX7CCppBfPA2t3CwmbpvtNjzWef3unuVtjarA75xd5yVBxDPSkC7SaHbunrCXEeZVQJ8bj2umGpajUBybMKNH848B6UusVc4m2vyBmRTUwfG36AJC6H6duVt4wGKFJMFZ2ysBYxp2z6nN2QuPhQxPPfw2hcQdfXdfQvdSEjpADp6Yvr8TVSF4wWsjYnjJkRUW6F5v84B5Q2WKJvQDcnPEJYY4ex7ZSaKfacY42CVBsmuDpXsaRTsp4h2xbYBMhJukp4jen5UUmmFnjEfkfJPMMnxadkWvkuH5R5Gs7G2kW6WMk8T43CbXQeF2v8YFKAxZPHkW2PjfTxMXtjSwvPBn44aATTSynQKK2ddARjZuPJHd32Szu5GDjReHut8HVvajbsUb3E7BzUZwtXkvjJjdkDY8mx5rMbudxsUStkz7yj6BxvFMyPNPWppS2FzVyntDHTeYR4CSmtfaJWWaBYrt4dFb6vSfbHJy6PCKBHWHCXzC5TnC4He
+    strategy: jwt

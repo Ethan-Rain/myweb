@@ -1,0 +1,9 @@
+server:
+  port: 18093   # 你可以指定端口
+
+synology:
+  api:
+    base-url: https://192.168.31.103:5001/webapi
+    account: yixinrui
+    passwd: Hello,World!2022
+    tokenTimeout: 3000

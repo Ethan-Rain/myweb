@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.helloworld1999.synology.mapper.FileInfoMapper">
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO file_info
+        (name, path, size, is_dir, mtime, ctime, atime, owner_user, owner_group, owner_uid, owner_gid,
+        perm_posix, perm_acl_mode, perm_acl, mount_point_type, indexed)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.name}, #{item.path}, #{item.size}, #{item.isDir},
+            FROM_UNIXTIME(#{item.mtime}),
+            FROM_UNIXTIME(#{item.ctime}),
+            FROM_UNIXTIME(#{item.atime}),
+            #{item.ownerUser}, #{item.ownerGroup}, #{item.ownerUid}, #{item.ownerGid},
+            #{item.permPosix}, #{item.permAclMode}, #{item.permAcl},
+            #{item.mountPointType}, #{item.indexed})
+        </foreach>
+    </insert>
+
+
+</mapper>
